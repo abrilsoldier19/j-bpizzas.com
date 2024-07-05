@@ -1,0 +1,40 @@
+<div class="col-md-6">
+            <div class="form-group">
+                <label for="semestre">Filtrar por semestre:</label>
+                <select name="semestre" id="semestre" class="form-control">
+                    <option value="">Todos los semestres</option>
+                    <option value="1">1er Semestre</option>
+                    <option value="2">2do Semestre</option>
+                    <option value="3">3er Semestre</option>
+                    <option value="4">4to Semestre</option>
+                    <option value="5">5to Semestre</option>
+                    <option value="6">6to Semestre</option>
+                </select>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="form-group">
+                <label for="filtroSalon">Filtrar por salon:</label>
+                <select name="filtroSalon" id="filtroSalon" class="form-control">
+                    <option value="">Todos los salones</option>
+                    <option value="Salon A">Salon A</option>
+                    <option value="Salon B">Salon B</option>
+                    <option value="Salon C">Salon C</option>
+                    <option value="Salon D">Salon D</option>
+                    <option value="Salon E">Salon E</option>
+                    <option value="Salon F">Salon F</option>
+                    <option value="Salon G">Salon G</option>
+                    <option value="Salon H">Salon H</option>
+                </select>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="form-group">
+                <label for="filtroTurno">Filtrar por Turno:</label>
+                <select name="filtroTurno" id="filtroTurno" class="form-control">
+                    <option value="">Todos los turnos</option>
+                    <option value="Matutino">Matutino</option>
+                    <option value="Vespertino">Vespertino</option>
+                </select>
+            </div>
+        </div>

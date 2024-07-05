@@ -1,0 +1,129 @@
+
+@can('crear-rol')
+
+@extends('layouts.app')
+
+@section('content')
+
+<section class="section">
+  <div class="section-header">
+      <h3 class="page__heading">Anexo 15 Casos Especiales 2021</h3>
+      <div class="card-body">
+        <h4>Bienvenido . {{ auth()->user()->name }} {{ auth()->user()->email }} </h4>
+     </div>
+  </div>
+  <form action="{{ route('Formatos.filtrar') }}" method="GET">
+    <div class="row">
+        <div class="col-lg-3">
+            <input type="text" name="Alumno" class="form-control" placeholder="Buscar por alumno">
+        </div>
+        <div class="col-lg-3">
+            <input type="text" name="Semestre" class="form-control" placeholder="Buscar por semestre">
+        </div>
+        <div class="col-lg-3">
+            <input type="text" name="Carrera" class="form-control" placeholder="Buscar por carrera">
+        </div>
+        <div class="col-lg-3">
+            <button type="submit" class="btn btn-primary">Buscar</button>
+        </div>
+    </div>
+</form>
+      <div class="section-body">
+          <div class="row">
+              <div class="col-lg-12">
+                  <div class="card">
+                      <div class="card-body">
+                        @can('crear-rol')
+                        <a class="btn btn-warning" href="{{ route('Formatos.create') }}">Nuevo</a>                        
+                        @endcan
+                        
+                          @csrf
+                            <table class="table table-striped mt-2">
+                                <thead style="background-color:#6777ef"> 
+                                    <tr>
+                                        <td rowspan="2">
+                                            <table>
+                                            @foreach ($formatos as $formato)
+                                            <form action="{{ route('Formatos.guardarAsignaturas')}}" method="POST">
+                                                @csrf
+                                                @php
+                                                $firstFormato = $formatos->first();
+                                                @endphp
+                                                <input type="hidden" name="id" value="{{ $firstFormato->IdFormatos }}">
+                                                <tr>
+                                                    <td rowspan="1"style="color:#fff;"></td>
+                                                    <td style="color:#black;">
+                                                        <textarea style="background-color:#6777ef; color:white; border-color: #6777ef;" type="hidden" name="asignatura1" rows="1.5" cols="10">{{$firstFormato->asignatura1}}</textarea>
+                                                    </td>
+                                                    <td>
+                                                        <button type="submit" class="btn btn-warning" href="{{ route('Formatos.guardarAsignaturas') }}">Guardar</button>
+                                                    </td>
+                                                </tr>
+                                            </form>
+                                            @endforeach
+                                                <tr>
+                                                    <td style="background-color: gray; color:#fff;"> Asignatura/Unidades </td>
+                                                    <td style="background-color: gray; color:#fff;"> U1</td> 
+                                                    <td style="background-color: gray; color:#fff;"> U1</td> 
+                                                    <td style="background-color: gray; color:#fff;"> U1</td> 
+                                                    <td style="background-color: gray; color:#fff;"> U1</td> 
+                                                    <td style="background-color: gray; color:#fff;"> U1</td> 
+                                                    <td style="background-color: gray; color:#fff;"> U1</td> 
+                                                    <td style="background-color: gray; color:#fff;"> U1</td> 
+                                                    <td style="background-color: gray; color:#fff;"> Observaciones</td> 
+                                                    <td style="background-color: gray; color:#fff;"> Agregar comentarios</td> 
+                                                </tr>
+                                                @foreach ($formatos as $formato)
+                                                <tr>
+                                                    <td style="background-color: #fff; color:black;">{{ $formato->nombre}}</td>
+                                                    <td style="background-color: #fff; color:black;">{{ $formato->calif_unidad_id}}</td>
+                                                    <td style="background-color: #fff; color:black;">{{ $formato->calif_unidad_id}}</td>
+                                                    <td style="background-color: #fff; color:black;">{{ $formato->calif_unidad_id}}</td>
+                                                    <td style="background-color: #fff; color:black;">{{ $formato->calif_unidad_id}}</td>
+                                                    <td style="background-color: #fff; color:black;">{{ $formato->calif_unidad_id}}</td>
+                                                    <td style="background-color: #fff; color:black;">{{ $formato->calif_unidad_id}}</td>
+                                                    <td style="background-color: #fff; color:black;">{{ $formato->calif_unidad_id}}</td>
+                                                    <td style="background-color: #fff; color:black;">{{ $formato->observaciones}}</td>
+                                                    @if (Auth::user()->hasRole('Maestro'))
+                                                    <td style="background-color: #fff; color:black;"> 
+                                                        <form action="{{ route('Formatos.agregarComentarios') }}" method="POST">
+                                                            @csrf
+                                                            <input type="hidden" name="id" value="{{ $formato->IdFormatos}}">
+                                                            <textarea name="observaciones">{{$formato->observaciones}}</textarea>
+                                                            <button type="submit" class="btn btn-warning" href="{{ route('Formatos.agregarComentarios') }}">Guardar</button> 
+                                                        </form>
+                                                    </td>
+                                                    @endif
+                                                    {{-- boton Editar --}}
+                                                    <td>  
+                                                         @can('editar-rol') 
+                                                         <a class="btn btn-info" href="{{ route('Formatos.edit', $formato->IdFormatos) }}">Editar</a>
+                                                         @endcan
+                                                         {{--boton borrar--}}
+                                                         @can('borrar-rol')
+                                                         {!! Form::open(['method' => 'DELETE','route' => ['Formatos.destroy', $formato->IdFormatos],'style'=>'display:inline']) !!}
+                                                         {!! Form::submit('Borrar', ['class' => 'btn btn-danger']) !!}
+                                                         {!! Form::close() !!}
+                                                         @endcan
+                                                    </td>
+                                                </tr>
+                                                @endforeach
+                                            </table>
+                                        </td>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    
+                                </tbody>
+                            </table>
+                        <div class="pagination justify-content-end">
+                            {!! $formatos->links() !!}
+                        </div>  
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </div>
+    </section>
+@endsection
+@endcan
