@@ -13,6 +13,30 @@
     margin-bottom: 10px;
 }
 
+.card-walmart {
+            border: 1px solid #e0e0e0 !important;
+            border-radius: 15px !important;
+            overflow: hidden;
+            background-color: #ffffff !important; /* Fuerza a que la tarjeta sea blanca sobre el fondo */
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05) !important;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card-walmart:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+        }
+        .product-title-walmart {
+            font-family: 'Century Gothic', sans-serif;
+            font-weight: bold;
+            font-size: 16px;
+            color: #212529;
+            height: 44px;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
 .button-pizza {
     background-color: #623F00;
     border: none;
@@ -305,37 +329,36 @@
     <div class="form-row justify-content-center" >
     <label class="text-box"  >Precios:</label>
     </div>
-    
 
 
-<div class="form-row justify-content-center" >
-    <div class="col-lg-2">
-        <label class="input-box" for="price_range">
-        
-            <div class="min-box" style="font-weight: bold; color: black;">
-                $<span name="min_price" id="price_range_label_min">{{ $min_price }}</span>
-            </div>
-            <div class="max-box" style="font-weight: bold; color: black;">
-                 $<span  name="max_price" id="price_range_label_max">{{ $max_price }}</span>
-            </div>
-            
-
-        </label>
+<div class="form-row justify-content-center">
+        <div class="col-lg-2">
+            <label class="input-box" for="price_range">
+                <div class="min-box">
+                    $<span id="price_range_label_min">{{ request('min_price') ?? 0 }}</span>
+                </div>
+                <div class="max-box">
+                    $<span id="price_range_label_max">{{ request('max_price') ?? 1000 }}</span>
+                </div>
+            </label>
+        </div>
     </div>
-    
-</div>
 
 
     <form action="{{ route('Bebidas.index') }}" method="GET">
-    <div id="priceRangeSlider"></div>
-        <div class="form-row justify-content-center">
-        <div class="col-lg-2">
-            <div class="form-group">
-                <input type="hidden" name="min_price" id="minPrice" value="{{ $min_price }}" min="{{ $min_price }}" max="{{ $max_price }}" step="1" />
-                <input type="hidden" name="max_price" id="maxPrice" value="{{ $max_price }}" min="{{ $min_price }}" max="{{ $max_price }}" step="1" />
+    <div class="form-row justify-content-center">
+            <div class="col-lg-3">
+                <div id="priceRangeSlider"></div>
             </div>
         </div>
-            
+        
+        <div class="form-row justify-content-center">
+            <div class="col-lg-2">
+                <div class="form-group">
+                    <input type="hidden" name="min_price" id="minPrice" value="{{ request('min_price') ?? 0 }}" />
+                    <input type="hidden" name="max_price" id="maxPrice" value="{{ request('max_price') ?? 1000 }}" />
+                </div>
+            </div>
         </div>
         <div class="form-row justify-content-center">
         
@@ -350,6 +373,14 @@
                     echo '<option value="'.$bebida['nombre_bebida'].'">'.$bebida['nombre_bebida'].'</option>';
                 }
             ?>
+                <?php
+                    $mysqli = new mysqli('localhost', 'root', '', 'pizzeria');
+                    $querySelect = $mysqli->query("SELECT DISTINCT nombre_bebida FROM bebidas");
+                    while ($bebidaSelect = mysqli_fetch_array($querySelect)) {
+                        $selected = (request('nombre_bebida') == $bebidaSelect['nombre_bebida']) ? 'selected' : '';
+                        echo '<option value="'.$bebidaSelect['nombre_bebida'].'" '.$selected.'>'.$bebidaSelect['nombre_bebida'].'</option>';
+                    }
+                ?>
                 </select>
             </div>
         </div>
@@ -363,74 +394,84 @@
     <div class="form-row justify-content-center">
             <div class="col-lg-1.5">
                 <a class="gradient-button btn-block" href="{{route ('Bebidas.create')}}" role="button" data-bs-toggle="button">
-                    <i class=" fa fa-plus-square"></i><span >Agregar Postres</span>
+                    <i class=" fa fa-plus-square"></i><span >Agregar bebidas</span>
                 </a>
             </div>
         </div>
     @endcan
+
     <div class="section-body" id="productos">
         <div class="row product-list">
         @if($bebidas->count() > 0)
             @foreach ($bebidas as $bebida)
                 <div class="col-lg-4 mb-4 product-box">
-                    <div class="card" >
-                    <img src="{{ asset('img/'.$bebida->bebida_imagen) }}" alt="Pizza Image" class="card-img-top" style="max-height: 200px; object-fit: cover;">
-                        <div class="card-body">
-                        <h6 class="mb-0 text-sm">{{ optional($bebida->vendedor)->name }}</h6>
-                            <h5 class="card-title">{{$bebida->nombre_bebida}}</h5>
-                            <p class="card-text" >Precio: ${{ number_format($bebida->bebida_precio, 0, '.', '.') }}</p>
-                            @if (Auth::user()->hasRole('Usuario') )
-                                <form action="{{ route('Bebidas.agregarCarrito', $bebida->id) }}" method="post">
-                                    @csrf
-                                    
-                                    <div class="form-group">
-                                        <label for="quantity">Cantidad:</label>
-                                        <input name="quantity" type="number"
-                                       class="text-sm sm:text-base px-2 pr-2 rounded-lg border border-gray-400 py-1 focus:outline-none focus:border-blue-400"
-                                       style="width: 50px" value="1" min="1" />
-                                    </div>
-                                    <p class="btn-holder">
-                                        <button type="submit"  class="btn btn-success" role="button">Agregar al carrito</button> 
-                                    </p>
-                                </form>
-                            @endif
-                            @can('Administrador-rol')
-                                <a href="{{ route('Bebidas.edit', $bebida->id) }}" class="btn btn-info">Editar</a>
-                            @endcan
-                            @if (Auth::user()->hasRole('Usuario') )
-                                @if(!$bebida->vendido)
-                                    <form method="POST" action="{{ route('Bebidas.comprar', $bebida->id) }}">
-                                        @csrf
-                                        @method('PUT')
-                                        <button type="submit" class="btn btn-success">Comprar</button>
-                                    </form>
-                                @else
-                                    <span class="btn bg-danger">Sold</span>
+                    <div class="card h-100 shadow-sm card-walmart">
+                        <!-- Contenedor superior para la foto con fondo gris suave de Walmart -->
+                        <div class="text-center pt-3 px-2 bg-light">
+                            <img src="{{ asset('img/'.$bebida->bebida_imagen) }}" alt="Bebida Image" class="card-img-top rounded" style="height: 160px; object-fit: cover;">
+                        </div>
+                        
+                        <div class="card-body d-flex flex-column p-3">
+                            <h6 class="mb-0 text-sm text-muted" style="font-family: 'Century Gothic', sans-serif; font-weight: bold; color: #757575;">
+                               {{ $bebida->marca ?? 'Genérico' }}
+                            </h6>
+                            <!-- Agregada la clase de corte automático para helados con nombres largos -->
+                            <h5 class="product-title-walmart mt-1 mb-1" title="{{ $bebida->nombre_bebida }}">{{ $bebida->nombre_bebida }}</h5>
+                            <p class="card-text text-primary font-weight-bold mb-3">Precio: ${{ number_format($bebida->bebida_precio, 0, '.', '.') }}</p>
+                            
+                            <!-- El contenedor mt-auto empuja los botones abajo manteniendo simetría recta -->
+                            <div class="mt-auto">
+                                <!-- ACCIONES EXCLUSIVAS DEL CLIENTE (USUARIO) -->
+                                @if (Auth::user()->hasRole('Usuario'))
+                                    @if($bebida->stock <= 0 || $bebida->vendido == 1)
+                                        <div class="text-danger small font-weight-bold mb-2">
+                                            <i class="fas fa-times-circle"></i> No disponible - Agotado
+                                        </div>
+                                        <button class="btn btn-secondary w-100 disabled" style="border-radius: 20px; font-weight: bold;" disabled>Agotado</button>
+                                    @else 
+                                        <div class="text-success small font-weight-bold mb-2">
+                                            <i class="fas fa-check-circle"></i> Quedan: <span class="badge bg-success text-white">{{ $bebida->stock ?? 50 }} pzas</span>
+                                        </div>
+                                        
+                                        <form action="{{ route('Bebidas.agregarCarrito', $bebida->id) }}" method="POST" class="mb-2">
+                                            @csrf
+                                            <div class="d-flex gap-2 align-items-center mb-3 justify-content-between">
+                                                <small class="text-muted">Cantidad:</small>
+                                                <!-- CORRECCIÓN: name="quantity" mapeado exactamente como lo espera tu controlador -->
+                                                <input type="number" id="cantidad_{{ $bebida->id }}" name="quantity" value="1" min="1" max="{{ $bebida->stock ?? 50 }}" class="form-control form-control-sm text-center" style="width: 65px; border-radius: 8px;">
+                                            </div>
+                                            <button type="submit" class="btn btn-success text-white w-100 font-weight-bold" style="border-radius: 20px; background-color: #0e6b02; border: none; font-size: 14px;">
+                                                <i class="fas fa-shopping-cart"></i> Agregar al carrito
+                                            </button>
+                                        </form>
+                                    @endif
                                 @endif
-                            @endif
-                            @can('Administrador-rol')
-                                {!! Form::open(['method' => 'DELETE','route' => ['Bebidas.destroy', $bebida->id],'style'=>'display:inline']) !!}
-                                {!! Form::submit('Borrar', ['class' => 'btn btn-danger']) !!}
-                                {!! Form::close() !!}
-                            @endcan
+                                
+                                <!-- ACCIONES EXCLUSIVAS DEL ADMINISTRADOR -->
+                                @can('Administrador-rol')
+                                    <div class="d-flex justify-content-between align-items-center pt-2 border-top mt-2">
+                                        <a href="{{ route('Bebidas.edit', $bebida->id) }}" class="btn btn-sm btn-info text-white" style="border-radius: 10px;">Editar</a>
+                                        {!! Form::open(['method' => 'DELETE','route' => ['Bebidas.destroy', $bebida->id],'style'=>'display:inline', 'onsubmit' => "return confirm('¿Seguro que deseas eliminar esta bebida?');"]) !!}
+                                            {!! Form::submit('Borrar', ['class' => 'btn btn-danger btn-sm', 'style' => 'border-radius: 10px;']) !!}
+                                        {!! Form::close() !!}
+                                    </div>
+                                @endcan
+                            </div>
                         </div>
                     </div>
                 </div>
-
-                <!-- Add a clearfix after every third card to start a new row -->
-                
             @endforeach
         @endif
-        
-        </div>
-        
-        <div class="form-row justify-content-center">
+    </div>
+    
+    <!-- Botón de paginación asíncrona Load More -->
+    <div class="form-row justify-content-center">
         @if($bebidas->count() < $totalProductos)
-    <p class="text-center mt-4 mb-5">
-        <button class="index btn btn-dark" data-totalResult="{{ $totalProductos }}">Load More</button>
-    </p>
-@endif
-</div>
+            <p class="text-center mt-4 mb-5">
+                <button class="index btn btn-dark" data-totalResult="{{ $totalProductos }}">Load More</button>
+            </p>
+        @endif
+    </div>
     </div>
     
 </div>
@@ -440,142 +481,149 @@
 @endsection
 {{-- @endcan --}}
 <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
-<script type="text/javascript">
-    var main_site="{{ url('/') }}";
-</script>
-<script>
-        $(document).ready(function() {
-  $(".js-select2").select2({
-    closeOnSelect: false
-  });
-  $(".js-select2-multi").select2({
-    closeOnSelect: false
-  });
- 
-});
 
-document.addEventListener('DOMContentLoaded', function() {
-    var minPrice = {{ $min_price }};
-        var maxPrice = {{ $max_price }};
-        var initialMin = {{ request('min_price') ?? $min_price }};
-        var initialMax = {{ request('max_price') ?? $max_price }};
+<script>
+    var main_site = "{{ url('/') }}";
+    
+    $(document).ready(function() {
+        if ($.fn.select2) {
+            $(".js-select2").select2({ closeOnSelect: false });
+            $(".js-select2-multi").select2({ closeOnSelect: false });
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var limiteAbsolutoMin = 0;
+        var limiteAbsolutoMax = 1000;
+        var initialMin = {{ request('min_price') ?? 0 }};
+        var initialMax = {{ request('max_price') ?? 1000 }};
         var minPriceInput = document.getElementById('minPrice');
         var maxPriceInput = document.getElementById('maxPrice');
-
-
         var priceRangeSlider = document.getElementById('priceRangeSlider');
         
-
-
-    noUiSlider.create(priceRangeSlider, {
-        start: [initialMin, initialMax],
-            connect: true,
-            range: {
-                'min': minPrice,
-                'max': maxPrice
-            }
+        if (priceRangeSlider) {
+            noUiSlider.create(priceRangeSlider, {
+                start: [initialMin, initialMax],
+                connect: true,
+                range: {
+                    'min': limiteAbsolutoMin,
+                    'max': limiteAbsolutoMax
+                }
+            });
+           
+            priceRangeSlider.noUiSlider.on('update', function(values, handle) {
+                var value = Math.round(values[handle]);
+                if (handle) {
+                    $('#price_range_label_max').text(value);
+                    maxPriceInput.value = value;
+                } else {
+                    $('#price_range_label_min').text(value);
+                    minPriceInput.value = value;
+                }
+            });
+        }
     });
 
-        priceRangeSlider.noUiSlider.on('update', function(values, handle) {
-        var minPrice = Math.round(values[0]);
-            var maxPrice = Math.round(values[1]);
-            var value = Math.round(values[handle]);
 
-        $('#price_range_label_min').text(minPrice);
-            $('#price_range_label_max').text(maxPrice);
-            $('#minPrice').val(minPrice);
-    $('#maxPrice').val(maxPrice);
-
-    if (handle) {
-                maxPriceInput.value = value;
-            } else {
-                minPriceInput.value = value;
-            }
+    $(document).ready(function(){
+    // Alerta de seguridad antes de borrar registros del menú
+    $(document).on('submit', 'form[action*="destroy"]', function() {
+        return confirm('¿Estás completamente seguro de que deseas eliminar esta bebida del menú?');
     });
 
-});
-$(document).ready(function(){
-        $(".index").on('click',function(){
-            var _totalCurrentResult=$(".product-box").length;
-            // Ajax Reuqest
-            $.ajax({
-                url: "{{ route('Bebidas.more_data') }}",
-                type:'get',
-                dataType:'json',
-                data:{
-                    skip:_totalCurrentResult
-                },
-                beforeSend:function(){
-                    $(".index").html('Loading...');
-                },
-                success:function(response){
-                    var _html='';
-                    var image="{{ asset('img') }}/";
-                    var isUsuario = {{ Auth::user()->hasRole('Usuario') ? 'true' : 'false' }};
-                    var isAdministrador = {{ Auth::user()->hasRole('Administrador') ? 'true' : 'false' }};
-                    var addToCartRoute = "{{ route('Bebidas.agregarCarrito', ':bebida_id') }}";
-                    var buyRoute = "{{ route('Bebidas.comprar', ':bebida_id') }}";
-                    var editRoute = "{{ route('Bebidas.edit', ':bebida_id') }}";
-                    var deleteRoute = "{{ route('Bebidas.destroy', ':bebida_id') }}";
+    $(".index").on('click', function(){
+        var _totalCurrentResult = $(".product-box").length;
+
+        $.ajax({
+            url: "{{ route('Bebidas.more_data') }}",
+            type: 'get',
+            dataType: 'json',
+            data: {
+                skip: _totalCurrentResult,
+                nombre_bebida: $('#nombre_bebida').val(),
+                min_price: $('#minPrice').val(),
+                max_price: $('#maxPrice').val()
+            },
+            beforeSend: function(){
+                $(".index").html('Loading...');
+            },
+            success: function(response){
+                var _html = '';
+                var image = "{{ asset('img') }}/";
+                var isUsuario = {{ Auth::user()->hasRole('Usuario') ? 'true' : 'false' }};
+                var isAdministrador = {{ Auth::user()->hasRole('Administrador') ? 'true' : 'false' }};
+                
+                // Ruta unificada a agregarCarrito en POST directo
+                var addToCartRoute = "{{ route('Bebidas.agregarCarrito', ':bebida_id') }}";
+                var editRoute = "{{ route('Bebidas.edit', ':bebida_id') }}";
+                var deleteRoute = "{{ route('Bebidas.destroy', ':bebida_id') }}";
+                
+                $.each(response, function(index, value) {
+                    var precioFormateado = parseFloat(value.bebida_precio).toLocaleString('es-MX', { minimumFractionDigits: 0 });
+
+                    _html += '<div class="col-lg-4 mb-4 product-box">';
+                    // CORRECCIÓN: Inyectamos la clase card-walmart exacta para que las tarjetas de abajo salgan blancas
+                    _html += '<div class="card h-100 shadow-sm card-walmart">';
+                    _html += '<div class="text-center pt-3 px-2 bg-light"><img src="' + image + value.bebida_imagen + '" class="card-img-top rounded" style="height: 160px; object-fit: cover;"></div>';
+                    _html += '<div class="card-body d-flex flex-column p-3">';
+                    var marcaProducto = value.marca ? value.marca : 'Genérico';
+                    _html += '<h6 class="mb-0 text-sm text-muted" style="font-family: \'Century Gothic\', sans-serif; font-weight: bold; color: #757575;">' + marcaProducto + '</h6>';
+                    _html += '<h5 class="product-title-walmart mt-1 mb-1" title="' + value.nombre_bebida + '">' + value.nombre_bebida + '</h5>';
+                    _html += '<p class="card-text text-primary font-weight-bold mb-3">Precio: $' + precioFormateado + '</p>';
                     
-                    $.each(response, function(index, value) {
-                        _html += '<div class="col-lg-4 mb-4 product-box">';
-                        _html += '<div class="card">';
-                        _html += '<img src="' + image + value.bebida_imagen + '" class="card-img-top" alt="' + value.nombre_bebida + '" style="max-height: 200px; object-fit: cover;">';
-                        _html += '<div class="card-body">';
-                        _html += '<h6 class="mb-0 text-sm">' + (value.vendedor ? value.vendedor.name : '') + '</h6>';
-                        _html += '<h5 class="card-title">' + value.nombre_bebida + '</h5>';
-                        _html += '<p class="card-text">Precio: $' + value.bebida_precio + '</p>';
-                        
-                        if (isUsuario) {
-                            _html += '<form action="' + addToCartRoute.replace(':bebida_id', value.id) + '" method="post">';
-                            _html += '<input type="hidden" name="_token" value="{{ csrf_token() }}">';
-                            _html += '<div class="form-group">';
-                            _html += '<label for="quantity">Cantidad:</label>';
-                            _html += '<input name="quantity" type="number" class="text-sm sm:text-base px-2 pr-2 rounded-lg border border-gray-400 py-1 focus:outline-none focus:border-blue-400" style="width: 50px" value="1" min="1" />';
-                            _html += '</div>';
-                            _html += '<p class="btn-holder">';
-                            _html += '<button type="submit" class="btn btn-success" role="button">Agregar al carrito</button>';
-                            _html += '</p>';
-                            _html += '</form>';
-                            
-                        if (!value.vendido) {
-                            _html += '<form method="POST" action="' + buyRoute.replace(':bebida_id', value.id) + '">';
-                             _html += '<input type="hidden" name="_token" value="{{ csrf_token() }}">';
-                            _html += '<input type="hidden" name="_method" value="PUT">';
-                            _html += '<button type="submit" class="btn btn-success">Comprar</button>';
-                            _html += '</form>';
+                    _html += '<div class="mt-auto">';
+                    
+                    if (isUsuario) {
+                        var stockReal = value.stock !== null ? value.stock : 50;
+
+                        if (stockReal <= 0 || value.vendido == 1) {
+                            _html += '<div class="text-danger small font-weight-bold mb-2"><i class="fas fa-times-circle"></i> No disponible - Agotado</div>';
+                            _html += '<button class="btn btn-secondary w-100 disabled" style="border-radius: 20px; font-weight: bold;" disabled>Agotado</button>';
                         } else {
-                            _html += '<span class="btn bg-danger">Sold</span>';
+                            _html += '<div class="text-success small font-weight-bold mb-2"><i class="fas fa-check-circle"></i> Quedan: <span class="badge bg-success text-white">' + stockReal + ' pzas</span></div>';
+                            
+                            // Formulario en JS corregido a POST nativo con variable quantity para el controlador
+                            _html += '<form action="' + addToCartRoute.replace(':bebida_id', value.id) + '" method="POST" class="mb-2">';
+                            _html += '<input type="hidden" name="_token" value="{{ csrf_token() }}">';
+                            _html += '<div class="d-flex gap-2 align-items-center mb-3 justify-content-between"><small class="text-muted">Cantidad:</small>';
+                            _html += '<input name="quantity" type="number" class="form-control form-control-sm text-center" style="width: 65px; border-radius: 8px;" value="1" min="1" max="' + stockReal + '" /></div>';
+                            _html += '<button type="submit" class="btn btn-success text-white w-100 font-weight-bold" style="border-radius: 20px; background-color: #0e6b02; border: none; font-size: 14px;"><i class="fas fa-shopping-cart"></i> Agregar al carrito</button>';
+                            _html += '</form>';
                         }
                     }
         
                     if (isAdministrador) {
-                        _html += '<a href="' + editRoute.replace(':bebida_id', value.id) + '" class="btn btn-info">Editar</a>';
-                         _html += '<form method="POST" action="' + deleteRoute.replace(':bebida_id', value.id) + '" style="display:inline">';
-                         _html += '<input type="hidden" name="_token" value="{{ csrf_token() }}">';
+                        _html += '<div class="d-flex justify-content-between align-items-center pt-2 border-top mt-2">';
+                        _html += '<a href="' + editRoute.replace(':bebida_id', value.id) + '" class="btn btn-sm btn-info text-white" style="border-radius: 10px;">Editar</a>';
+                        _html += '<form method="POST" action="' + deleteRoute.replace(':bebida_id', value.id) + '" style="display:inline" onsubmit="return confirm(\'¿Seguro que deseas eliminar esta bebida del menú?\');">';
+                        _html += '<input type="hidden" name="_token" value="{{ csrf_token() }}">';
                         _html += '<input type="hidden" name="_method" value="DELETE">';
-                        _html += '<button type="submit" class="btn btn-danger">Borrar</button></form>';
+                        _html += '<button type="submit" class="btn btn-danger btn-sm" style="border-radius: 10px;">Borrar</button></form>';
+                        _html += '</div>';
                     }
 
-                    _html += '</div>'
-                    _html += '</div>'
-                    _html += '</div>';
+                    _html += '</div>'; 
+                    _html += '</div>'; 
+                    _html += '</div>'; 
+                    _html += '</div>'; 
                 });
 
-                    $(".product-list").append(_html);
-                    // Change Load More When No Further result
-                    var _totalCurrentResult=$(".product-box").length;
-                    var _totalResult=parseInt($(".index").attr('data-totalResult'));
-                    console.log(_totalCurrentResult);
-                    console.log(_totalResult);
-                    if(_totalCurrentResult==_totalResult){
-                        $(".index").remove();
-                    }else{
-                        $(".index").html('Load More');
-                    }
+                $(".product-list").append(_html);
+                
+                var _totalCurrentResult = $(".product-box").length;
+                var _totalResult = parseInt($(".index").attr('data-totalResult'));
+                
+                if(_totalCurrentResult >= _totalResult){
+                    $(".index").remove();
+                } else {
+                    $(".index").html('Load More');
                 }
-            });
+            },
+            error: function() {
+                $(".index").html('Load More');
+                alert('Ocurrió un error al cargar más bebidas. Inténtalo nuevamente.');
+            }
         });
     });
+});
   </script>

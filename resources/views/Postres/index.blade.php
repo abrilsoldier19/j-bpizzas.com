@@ -6,7 +6,13 @@
 <head>
     <link href="{{ asset('css/jquery-ui.css') }}" rel="stylesheet">
     <link href="https://cloudflare.com" rel="stylesheet">
-    <link rel="stylesheet" href="https://cloudflare.com">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/14.6.4/nouislider.min.js"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/5.3.2/css/bootstrap.min.css">
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.0.1/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/14.6.4/nouislider.min.css">
+
+    
     <style>
    @import url('https://googleapis.com');
    .form-row {
@@ -502,9 +508,6 @@
                 var addToCartRoute = "{{ route('Postres.agregarCarrito', ':postre_id') }}";
                 var editRoute = "{{ route('Postres.edit', ':postre_id') }}";
                 var deleteRoute = "{{ route('Postres.destroy', ':postre_id') }}";
-                
-
-
                 
                 $.each(response, function(index, value) {
                     var precioFormateado = parseFloat(value.postre_precio).toLocaleString('es-MX', { minimumFractionDigits: 0 });

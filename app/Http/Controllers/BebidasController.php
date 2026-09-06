@@ -226,52 +226,32 @@ public function updateCart(Request $request)
 
     $userId = auth()->id();
     $newQuantity = intval($request->quantity);
+    $bebida = Bebida::findOrFail($request->id);
 
-    if ($request->id && $request->quantity) {
-        $userId = auth()->user()->id;
-        $newQuantity = intval($request->quantity);
+    $cartItem = Carrito::where('id_usuario', $userId)
+        ->where('nombre_producto', $bebida->nombre_bebida)
+        ->first();
 
-        $bebida = Bebida::findOrFail($request->id);
-
-        $cartItem = Carrito::where('id_usuario', $userId)
-            ->where('nombre_producto', $bebida->nombre_bebida)
-            ->first();
-
-        if ($cartItem) {
-            session()->flash('error', "Producto no encontrado en el carrito.");
-            return redirect()->back();
-        }
-
-        $oldQuantity = intval($cartItem->cantidad_producto);
-        $difference = $newQuantity - $oldQuantity;
-
-        if ($difference > 0 && $bebida->stock < $difference) {
-            session()->flash('error', 'Lo sentimos, solo quedan ' . $bebida->stock . ' disponibles.');
-            return redirect()->back();
-        }
-
-        $cartItem->cantidad_producto = $newQuantity;
-        $cartItem->save();
-
-        // Update the session cart
-        $carrito = session()->get('carrito');
-        if (isset($carrito[$request->id])) {
-            $carrito[$request->id]["quantity"] = $request->quantity;
-            session()->put('carrito', $carrito);
-        }
-
-        $bebida->stock -= $difference;
-        if ($bebida->stock <= 0) {
-            $bebida->stock = 0;
-            $bebida->vendido = true;
-        } else {
-            $bebida->vendido = false;
-        }
-        $bebida->save();
-        
-        session()->flash('success', 'Carrito actualizado.');
-        return redirect()->back();
+    if (!$cartItem) {
+        return redirect()->back()->with('error', 'Producto no encontrado en el carrito.');
     }
+
+    $difference = $newQuantity - intval($cartItem->cantidad_producto);
+
+    if ($difference > 0 && $bebida->stock < $difference) {
+        return redirect()->back()->with('error', "Lo sentimos, solo quedan {$bebida->stock} piezas de este producto.");
+    }
+
+    $cartItem->update(['cantidad_producto' => $newQuantity]);
+
+    session()->put("carrito.{$request->id}.quantity", $newQuantity);
+
+    $bebida->stock -= $difference;
+    $bebida->vendido = ($bebida->stock <= 0);
+    $bebida->save();
+        
+    return redirect()->back()->with('success', 'Carrito actualizado con éxito.');
+
 }
 
     public function remove(Request $request)
