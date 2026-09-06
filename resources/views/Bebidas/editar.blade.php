@@ -22,14 +22,21 @@
             <div class="form-group">
                
                 <div class="custom-file container mt-3">
-                    <label style="font-family: Century Gothic, sans-serif; font-size: 14px;">Nombre Pizza</label>
+                    <label style="font-family: Century Gothic, sans-serif; font-size: 14px;">Nombre Bebida</label>
                     <input type="text" class="form-control" name="nombre_bebida" value="{{ $bebidas->nombre_bebida}}">
                 </div>
                 <div class="custom-file container mt-5">
-                    <label style="font-family: Century Gothic, sans-serif; font-size: 14px;">Precio Pizza</label>
+                    <label style="font-family: Century Gothic, sans-serif; font-size: 14px;">Precio Bebida</label>
                     <input type="text" class="form-control" name="bebida_precio" value="{{ $bebidas->bebida_precio}}"><br>
                 </div>
-                
+                <div class="custom-file container mt-5">
+                    <label style="font-family: Century Gothic, sans-serif; font-size: 14px;">Marca o proveedor</label>
+                    <input type="text" placeholder="Ej: Coca Cola, Fanta" class="form-control" id="marca" name="marca" value="{{ $bebidas->marca }}"><br>
+                </div>
+                <div class="custom-file container mt-5">
+                    <label style="font-family: Century Gothic, sans-serif; font-size: 14px;">Stock</label>
+                    <input type="text" class="form-control" id="stock" name="stock" value="{{ $bebidas->stock }}"><br>
+                </div>
                 <div class="custom-file container mt-5">
                     <input type="file" name="file" multiple class="custom-file-input form-control" id="file" accept="image/*">
                     <label class="custom-file-label" for="customFile">Choose file</label><br>

@@ -26,7 +26,14 @@
                     <label style="font-family: Century Gothic, sans-serif; font-size: 14px;">Precio bebida</label>
                     <input type="text" class="form-control" id="bebida_precio" name="bebida_precio"><br>
                 </div>
-                
+                <div class="custom-file container mt-5">
+                    <label style="font-family: Century Gothic, sans-serif; font-size: 14px;">Marca o proveedor</label>
+                    <input type="text" placeholder="Ej: Coca Cola, Fanta" class="form-control" id="marca" name="marca"><br>
+                </div>
+                <div class="custom-file container mt-5">
+                    <label style="font-family: Century Gothic, sans-serif; font-size: 14px;">Stock</label>
+                    <input type="text" class="form-control" id="stock" name="stock"><br>
+                </div>
                 <div class="custom-file container mt-5">
                     <input type="file" name="file" multiple class="custom-file-input form-control" id="file" accept="image/*">
                     <label class="custom-file-label" for="customFile">Choose file</label><br>
