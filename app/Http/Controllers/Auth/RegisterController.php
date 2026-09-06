@@ -26,7 +26,7 @@ class RegisterController extends Controller
     {
         return Validator::make($data, [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:usuarios'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'roles' =>['required'],
         ]);
@@ -34,21 +34,28 @@ class RegisterController extends Controller
 
     protected function create(array $data)
     {
+        $roleIdValue = 2; 
+        
+        if (isset($data['roles'])) {
+            $rolesArray = is_array($data['roles']) ? $data['roles'] : [$data['roles']];
+            $roleSelected = Role::whereIn('name', $rolesArray)->first();
+            if ($roleSelected) {
+                $roleIdValue = $roleSelected->id;
+            }
+        }
+
         $user = Usuario::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
+            'name'     => $data['name'],
+            'email'    => $data['email'],
             'password' => Hash::make($data['password']),
+            'role_id'  => $roleIdValue, 
         ]);
     
-        // Attach the selected role(s) to the user using the roles() relationship method
         if (isset($data['roles'])) {
             $roles = Role::whereIn('name', $data['roles'])->pluck('id');
             $user->roles()->sync($roles);
         }
     
         return $user;
-
-        
-        
     }
 }

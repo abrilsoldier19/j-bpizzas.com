@@ -14,8 +14,11 @@ class Pizzeria extends Model
     protected $table = 'pizzeria';
     protected $fillable = [
         'nombre_pizza',
+        'marca',
         'precio_pizza',
+        'descripcion_pizza',
         'imagen_pizza',
+        'stock',
         'vendido',
         'id_usuario',
     ];

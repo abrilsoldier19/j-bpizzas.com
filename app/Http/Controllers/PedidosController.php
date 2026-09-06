@@ -30,9 +30,9 @@ class PedidosController extends Controller
     
         if ($user->hasRole('Administrador')) {
             // If the user is a regular user, show only their orders
-            $pedidos = Order::paginate(5);
+            $pedidos = Order::paginate(7);
         } else {
-            $pedidos = Order::where('id_usuario', auth()->user()->id)->paginate(5);          
+            $pedidos = Order::where('id_usuario', auth()->user()->id)->paginate(7);          
         }
         $orders = Pedido::all();
 
@@ -121,7 +121,7 @@ class PedidosController extends Controller
     // Eliminar el pedido
     $pedido->delete();
 
-    return redirect()->route('Pedidos.compra')->with('success', 'Pedido eliminado exitosamente.');
+    return redirect()->route('Pedidos.pizzas')->with('success', 'Pedido eliminado exitosamente.');
 }
 
 public function deleteFromCart($id)
@@ -141,7 +141,7 @@ public function eliminarPostres($id)
     // Eliminar el postre
     $postre->delete();
 
-    return redirect()->route('Pedidos.compra')->with('success', 'postre eliminado exitosamente.');
+    return redirect()->route('Pedidos.postres')->with('success', 'postre eliminado exitosamente.');
 }
 
 public function eliminarBebidas($id)
@@ -150,7 +150,7 @@ public function eliminarBebidas($id)
     // Eliminar el bebida
     $bebida->delete();
 
-    return redirect()->route('Pedidos.compra')->with('success', 'bebida eliminado exitosamente.');
+    return redirect()->route('Pedidos.bebidas')->with('success', 'bebida eliminado exitosamente.');
 }
 
     public function show($id)
@@ -182,22 +182,51 @@ public function comprar(Request $request) {
     $id_comprador = Auth::user()->id;
 
     foreach ($request->check_pizza as $key => $value) {
+        // 1. Obtener las cantidades enviadas por el formulario
+        $cantPizza = $request->cantidad_comprada_pizza[$value];
+        $cantBebida = $request->cantidad_comprada_bebida[$request->check_bebida[$key]];
+        $cantPostre = $request->cantidad_comprada_postre[$request->check_postre[$key]];
+
+        // 2. BUSCAR Y DESCONTAR STOCK DE LA PIZZA
+        $pizza = Pizzeria::find($value);
+        if ($pizza) {
+            $pizza->stock = max(0, $pizza->stock - $cantPizza);
+            if ($pizza->stock <= 0) { $pizza->vendido = 1; } // Si se acaba, pasa a Agotado
+            $pizza->save();
+        }
+
+        // 3. BUSCAR Y DESCONTAR STOCK DE LA BEBIDA
+        $bebida = Bebida::find($request->check_bebida[$key]);
+        if ($bebida) {
+            $bebida->stock = max(0, $bebida->stock - $cantBebida);
+            if ($bebida->stock <= 0) { $bebida->vendido = 1; }
+            $bebida->save();
+        }
+
+        // 4. BUSCAR Y DESCONTAR STOCK DEL POSTRE
+        $postre = Postre::find($request->check_postre[$key]);
+        if ($postre) {
+            $postre->stock = max(0, $postre->stock - $cantPostre);
+            if ($postre->stock <= 0) { $postre->vendido = 1; }
+            $postre->save();
+        }
+
+        // 5. Guardar el registro en el historial de pedidos
         $pedido = new Pedido;
-    $pedido->id_producto = $value;
-    $pedido->id_bebida = $request->check_bebida[$key];
-    $pedido->id_postre = $request->check_postre[$key];
-    $pedido->id_comprador = $id_comprador;
-    $pedido->cantidad_comprada_pizza = $request->cantidad_comprada_pizza[$value];
-    $pedido->cantidad_comprada_bebida = $request->cantidad_comprada_bebida[$request->check_bebida[$key]];
-    $pedido->cantidad_comprada_postre = $request->cantidad_comprada_postre[$request->check_postre[$key]];
-    $pedido->save();
+        $pedido->id_producto = $value;
+        $pedido->id_bebida = $request->check_bebida[$key];
+        $pedido->id_postre = $request->check_postre[$key];
+        $pedido->id_comprador = $id_comprador;
+        $pedido->cantidad_comprada_pizza = $cantPizza;
+        $pedido->cantidad_comprada_bebida = $cantBebida;
+        $pedido->cantidad_comprada_postre = $cantPostre;
+        $pedido->save();
     }
 
     session()->forget('carrito');
-
-
-    return redirect()->back()->with('success', 'Pedidos realizados con éxito');
+    return redirect()->back()->with('success', 'Pedidos realizados con éxito y stock actualizado.');
 }
+
 
 
 public function checkout(Request $request) {
@@ -214,7 +243,6 @@ public function procesarCompra(Request $request) {
     $pmode = $request->input('metodo_pago');
     $amount_paid = $request->input('total_pago');
     
-    // Crear un nuevo registro en la tabla de pedidos
     $order = new Order;
     $order->id_usuario = Auth::id();
     $order->nombre_usuario = $name;
@@ -223,34 +251,63 @@ public function procesarCompra(Request $request) {
     $order->direccion = $address;
     $order->metodo_pago = $pmode;
     $order->total_pago = $amount_paid;
+    $order->imagen_producto = ''; // Inicializamos vacío para evitar errores de texto concatenado
 
-    // Obtener los productos del carrito
+    // Obtener todos los productos que este usuario tiene en su carrito provisional
     $carritoItems = Carrito::where('id_usuario', Auth::id())->get();
 
-    // Construir la cadena de productos para almacenar en la orden
+    // Construir la cadena de texto para almacenar en la orden general resumida
     $productos = '';
-    $cantidad_productos = 0;
-    foreach ($carritoItems as $producto) {
-        // Concatenar el nombre del producto
-        $productos .= $producto->nombre_producto . ', ';
-        // Concatenar la cantidad del producto
-        $cantidad_productos += $producto->cantidad_producto . ', ';
-        // Concatenar la imagen del producto
-        $order->imagen_producto .= $producto->imagen_producto . ', ';
-    }
-    $order->productos = rtrim($productos, ', '); // Eliminar la última coma y espacio
-    $order->cantidad_productos = rtrim($cantidad_productos, ', ');
+    $cantidad_productos = '';
 
-    // Guardar la orden
+    foreach ($carritoItems as $producto) {
+        $productos .= $producto->nombre_producto . ', ';
+        $cantidad_productos .= $producto->cantidad_producto . ', ';
+        $order->imagen_producto .= $producto->imagen_producto . ', ';
+
+        $postreBase = Postre::where('nombre_postre', $producto->nombre_producto)->first();
+        
+        if ($postreBase) {
+            // ¡AHORA SÍ! Como el cliente ya está pagando en caja, registramos en la tabla final permanente
+            ProductoPostre::create([
+                'id_postre'         => $postreBase->id,
+                'id_comprador'      => Auth::id(),
+                'cantidad_comprada' => $producto->cantidad_producto,
+            ]);
+        }
+
+        $bebidaBase = Bebida::where('nombre_bebida', $producto->nombre_producto)->first();
+        if ($bebidaBase) {
+            // ¡AHORA SÍ! Como el cliente ya está pagando en caja, registramos en la tabla final permanente
+            ProductoBebida::create([
+                'id_bebida'         => $bebidaBase->id,
+                'id_comprador'      => Auth::id(),
+                'cantidad_comprada' => $producto->cantidad_producto,
+            ]);
+        }
+
+        $pizzaBase = Pizzeria::where('nombre_pizza', $producto->nombre_producto)->first();
+        if ($pizzaBase) {
+            // ¡AHORA SÍ! Como el cliente ya está pagando en caja, registramos en la tabla final permanente
+            ProductoPizzas::create([
+                'id_producto'         => $pizzaBase->id,
+                'id_comprador'      => Auth::id(),
+                'cantidad_comprada' => $producto->cantidad_producto,
+            ]);
+        }
+    }
+    
+    $order->productos = rtrim($productos, ', '); 
+    $order->cantidad_productos = rtrim($cantidad_productos, ', ');
+    $order->imagen_producto = rtrim($order->imagen_producto, ', ');
+
     $order->save();
 
-    // Eliminar los productos del carrito
     Carrito::where('id_usuario', Auth::id())->delete();
+    session()->forget('carrito');
 
-    // Redireccionar a la página de confirmación u otra página
-    return redirect()->route('Pedidos.checkout')->with('success', 'Compra realizada correctamente.');
+    return redirect()->route('Pedidos.checkout')->with('success', '¡Compra realizada correctamente! Tu orden ha sido enviada a preparación.');
 }
-
 
 
 public function updateCart(Request $request)

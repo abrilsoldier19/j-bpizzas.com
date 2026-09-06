@@ -15,11 +15,11 @@ class CreateProductoBebidasTable extends Migration
     {
         Schema::create('producto_bebidas', function (Blueprint $table) {
             $table->id('id');
-            $table->unsignedBigInteger('id_bebida');
-            $table->bigInteger('id_comprador');
 
-        $table->foreign('id_bebida')->references('id')->on('bebidas')->onDelete('cascade');
-        $table->foreign('id_comprador')->references('id')->on('usuarios')->onDelete('cascade');
+            $table->integer('cantidad_comprada')->default(false);
+
+            $table->foreignId('id_bebida')->constrained('bebidas')->onDelete('cascade');
+            $table->foreignId('id_comprador')->constrained('usuarios')->onDelete('cascade');
         });
     }
 

@@ -13,8 +13,10 @@ class Postre extends Model
     public $timestamps = false;
     protected $fillable = [
         'nombre_postre',
+        'marca',
         'postre_precio',
         'postre_imagen',
+        'stock',
         'vendido',
         'id_usuario',
     ];

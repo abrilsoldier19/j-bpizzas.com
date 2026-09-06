@@ -12,12 +12,23 @@ class CreateBebidaTable extends Migration
      * @return void
      */
     public function up()
-    {
-        Schema::create('bebida', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
-        });
-    }
+{
+    Schema::create('bebidas', function (Blueprint $table) {
+        $table->id();
+        
+        // 🥤 COLUMNAS WALMART PARA BEBIDAS
+        $table->string('nombre_bebida');
+        $table->string('marca')->default('Genérico'); // Para poner 'Coca-Cola', 'Pepsi', etc.
+        $table->double('bebida_precio');
+        $table->string('bebida_imagen')->nullable();
+        $table->integer('stock')->default(20); // Inventario inicial de refrescos
+        $table->boolean('vendido')->default(false); // Interruptor de agotado (0 disponible, 1 agotado)
+        
+        $table->foreignId('id_usuario')->constrained('usuarios')->onDelete('cascade');
+        $table->timestamps();
+    });
+}
+
 
     /**
      * Reverse the migrations.

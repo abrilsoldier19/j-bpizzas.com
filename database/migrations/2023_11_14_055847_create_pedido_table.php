@@ -12,24 +12,22 @@ class CreatePedidoTable extends Migration
      * @return void
      */
     public function up()
-    {
-        Schema::create('pedidos', function (Blueprint $table) {
-            $table->id('id');
-            $table->unsignedBigInteger('id_producto');
-            $table->unsignedBigInteger('id_bebida');
-            $table->unsignedBigInteger('id_postre');
-            $table->bigInteger('id_comprador');
-            $table->integer('cantidad_comprada_pizza')->default(false);
-            $table->integer('cantidad_comprada_bebida')->default(false);
-            $table->integer('cantidad_comprada_postre')->default(false);
+{
+    Schema::create('pedidos', function (Blueprint $table) {
+        $table->id('id'); // Manteniendo tu estilo original de id
 
-            $table->foreign('id_producto')->references('id')->on('pizzeria')->onDelete('cascade');
-            $table->foreign('id_bebida')->references('id')->on('bebidas')->onDelete('cascade');
-            $table->foreign('id_postre')->references('id')->on('postres')->onDelete('cascade');
-            $table->foreign('id_comprador')->references('id')->on('usuarios')->onDelete('cascade');
-            
-        });
-    }
+        $table->integer('cantidad_comprada_pizza')->default(0);
+        $table->integer('cantidad_comprada_bebida')->default(0);
+        $table->integer('cantidad_comprada_postre')->default(0);
+
+        // MAPEO DE LLAVES FORÁNEAS (Apuntando a tus nombres reales en singular)
+        $table->foreignId('id_producto')->constrained('pizzeria')->onDelete('cascade');
+        $table->foreignId('id_bebida')->constrained('bebidas')->onDelete('cascade');
+        $table->foreignId('id_postre')->constrained('postres')->onDelete('cascade');
+        $table->foreignId('id_comprador')->constrained('usuarios')->onDelete('cascade');
+    });
+}
+
 
     /**
      * Reverse the migrations.

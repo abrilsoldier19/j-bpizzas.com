@@ -59,7 +59,7 @@
                                     </td>
                                     <td>
                                     @can('borrar-rol')
-                                {!! Form::open(['method' => 'DELETE','route' => ['Pedidos.destroy', $postre->id],'style'=>'display:inline']) !!}
+                                {!! Form::open(['method' => 'DELETE','route' => ['Pedidos.eliminarPostres', $postre->id],'style'=>'display:inline']) !!}
                                 {!! Form::submit('Borrar', ['class' => 'btn btn-danger']) !!}
                                 {!! Form::close() !!}
                             @endcan

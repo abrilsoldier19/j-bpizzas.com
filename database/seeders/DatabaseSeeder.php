@@ -13,7 +13,14 @@ class DatabaseSeeder extends Seeder
      */
     public function run()
     {
-        // \App\Models\User::factory(10)->create();
+        $admin = \App\Models\Usuario::firstOrCreate(
+        ['email' => 'admin@admin.com'],
+        [
+            'name' => 'Administrador',
+            'password' => bcrypt('12345678'), // Contraseña de prueba para iniciar sesión
+            'role_id' => 1,
+        ]
+    );
         
     }
 }

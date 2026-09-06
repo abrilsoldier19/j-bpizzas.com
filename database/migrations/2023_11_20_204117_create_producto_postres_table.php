@@ -15,11 +15,10 @@ class CreateProductoPostresTable extends Migration
     {
         Schema::create('producto_postres', function (Blueprint $table) {
             $table->id('id');
-            $table->unsignedBigInteger('id_postre');
-            $table->bigInteger('id_comprador');
+            $table->integer('cantidad_comprada');
 
-        $table->foreign('id_postre')->references('id')->on('postres')->onDelete('cascade');
-        $table->foreign('id_comprador')->references('id')->on('usuarios')->onDelete('cascade');
+        $table->foreignId('id_postre')->constrained('postres')->onDelete('cascade');
+        $table->foreignId('id_comprador')->constrained('usuarios')->onDelete('cascade');
         });
     }
 

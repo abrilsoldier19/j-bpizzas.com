@@ -5,25 +5,25 @@ $query = Pizzeria::query();
 $request = Request();
 
 if ($request->filled('min_price') && $request->filled('max_price')) {
-        $minPrice = $request->input('min_price');
-        $maxPrice = $request->input('max_price');
-        $query->whereBetween('precio_pizza', [$minPrice, $maxPrice]);
-    }
+    $minPrice = $request->input('min_price');
+    $maxPrice = $request->input('max_price');
+    $query->whereBetween('precio_pizza', [$minPrice, $maxPrice]);
+}
 if ($request->filled('nombre_pizza')) {
-        $query->where('nombre_pizza', 'LIKE', '%' . $request->input('nombre_pizza') . '%');
-    }
+    $query->where('nombre_pizza', 'LIKE', '%' . $request->input('nombre_pizza') . '%');
+}
 
-    if ($request->ajax()) {
-        return response()->json([
-            $pizzas= view('Pizzas.index', compact('pizzas'))->render(),
-            'pagination' => $pizzas->links()->toHtml(),
-        ]);
-    }
+if ($request->ajax()) {
+    return response()->json([
+        $pizzas = view('Pizzas.index', compact('pizzas'))->render(),
+        'pagination' => $pizzas->links()->toHtml(),
+    ]);
+}
 
 $pizzas = $query->simplePaginate(9);
 $totalProductos = $query->count();
-
 @endphp
+
 <title>Pizzas | {{ config('app.name') }}</title>
 
 @extends('layouts.app')
@@ -31,13 +31,57 @@ $totalProductos = $query->count();
 @section('content')
 <section class="section">
 <head>
-    
+    <!-- 1. Estilos e Inyecciones CSS requeridas -->
     <link href="css/jquery-ui.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.0.1/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/14.6.4/nouislider.min.css">
+
+    <!-- 2. Librerías JavaScript esenciales en el orden correcto de dependencias -->
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/14.6.4/nouislider.min.js"></script>
 
     <style>
    @import url('https://fonts.googleapis.com/css2?family=Poppins&display=swap');
    .form-row {
     margin-bottom: 10px;
+}
+
+.card-walmart {
+            border: 1px solid #e0e0e0 !important;
+            border-radius: 15px !important;
+            overflow: hidden;
+            background-color: #ffffff !important; /* Fuerza a que la tarjeta sea blanca sobre el fondo */
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05) !important;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card-walmart:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+        }
+        .product-title-walmart {
+            font-family: 'Century Gothic', sans-serif;
+            font-weight: bold;
+            font-size: 16px;
+            color: #212529;
+            max-height: 44px;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            margin-top: 2px !important;
+            margin-bottom: 2px !important;
+        }
+
+        .product-description-walmart {
+    font-family: 'Century Gothic', sans-serif;
+    font-size: 13px;
+    color: #6c757d;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    text-align: justify;
+    -webkit-box-orient: vertical;
+    margin-top: 0px !important;
+    margin-bottom: 2px !important;
 }
 
 .button-pizza {
@@ -111,28 +155,23 @@ $totalProductos = $query->count();
     }
 }
 .card {
-        /* Add some styling to the cards */
         border: 1px solid #ccc;
         border-radius: 10px;
         margin: 10px;
         padding: 10px;
     }
 
-    clearfix {
-        clear: both;
-    }
-
     /* Ensure three cards per row */
     .row {
         display: flex;
         flex-wrap: wrap;
-        margin: -15px; /* Adjust margin to compensate for column spacing */
+        margin: -15px;
     }
 
     .col-lg-4 {
         flex: 0 0 33.3333%;
         max-width: 33.3333%;
-        padding: 15px; /* Adjust padding to create space between cards */
+        padding: 15px;
     }
 
     @media (max-width: 991px) {
@@ -148,69 +187,64 @@ $totalProductos = $query->count();
     }
 
     .select2-container .select2-selection--single {
-                                font-family: 'Century Gothic', sans-serif;
-                                background-color: lightgray; 
-                                color: black;
-                                font-size: 14px;
-                            }
+        font-family: 'Century Gothic', sans-serif;
+        background-color: lightgray; 
+        color: black;
+        font-size: 14px;
+    }
 
-                            .select2.select2-container .select2-selection .select2-selection__arrow {
-                                background: #f8f8f8;
-                                border-left: 1px solid #ccc;
-                                -webkit-border-radius: 0 3px 3px 0;
-                                -moz-border-radius: 0 3px 3px 0;
-                                border-radius: 0 3px 3px 0;
-                                height: 22px;
-                                width: 23px;
-                            }
+    .select2.select2-container .select2-selection .select2-selection__arrow {
+        background: #f8f8f8;
+        border-left: 1px solid #ccc;
+        border-radius: 0 3px 3px 0;
+        height: 22px;
+        width: 23px;
+    }
 
-                            .select2.select2-container.select2-container--open .select2-selection.select2-selection--single {
-  background: white;
-  color: black;
-}
+    .select2.select2-container.select2-container--open .select2-selection.select2-selection--single {
+        background: white;
+        color: black;
+    }
 
+    .select2-container .select2-selection--single:hover {
+        font-family: 'Century Gothic', sans-serif;
+        background-color: white; 
+        color: blue;
+        font-size: 14px;
+    }
 
-                            .select2-container .select2-selection--single:hover {
-                                font-family: 'Century Gothic', sans-serif;
-                                background-color: white; 
-                                color: blue;
-                                font-size: 14px;
-                            }
+    .select2-container {
+        width: 100% !important; 
+    }
 
+    .select2-search__field {
+        font-family: Century Gothic, sans-serif; 
+        font-size: 14px;
+    }
 
-                            .select2-container {
-                                width: 100% !important; 
-                            }
+    .select2-results__option {
+        background-color: black; 
+        color: white; 
+        font-family: Century Gothic, sans-serif; 
+        padding: 8px;
+        font-size: 14px;
+    }
 
-                            .select2-search__field {
-                                font-family: Century Gothic, sans-serif; 
-                                font-size: 14px;
-                            }
+    .select2-results__option:hover {
+        background-color: white; 
+        font-size: 14px;
+    }
 
-                            .select2-results__option {
-                                background-color: black; 
-                                color: white; 
-                                font-family: Century Gothic, sans-serif; 
-                                padding: 8px;
-                                font-size: 14px;
-                            }
-
-                            .select2-results__option:hover {
-                                background-color: white; 
-                                font-size: 14px;
-                            }
-
-
-                            .centered-select {
-                                display: block;
-                                margin: 0 auto;
-                                text-align: center;
-                            }
+    .centered-select {
+        display: block;
+        margin: 0 auto;
+        text-align: center;
+    }
                             
 /* Estilo para etiquetas de precio */
 #price_range_label_min,
 #price_range_label_max {
-    color: black; /* Cambia el color según tu preferencia */
+    color: black;
     font-weight: bold; 
     font-family: 'Century Gothic', sans-serif;
 }
@@ -221,61 +255,46 @@ $totalProductos = $query->count();
     width: 25px;
     height: 25px;
     border-radius: 50%;
-    background-color: blue; /* Cambiar color del thumb */
+    background-color: blue;
     cursor: pointer;
-    z-index: 2; /* Asegurarse de que esté sobre el thumb original */
+    z-index: 2;
 }
-
-
-
 
 .custom-range:hover {
   opacity: 1;
 }
 
-
-
 .input-box {
     display: flex;
-    position: relative; /* Asegurarse de que los thumbs estén posicionados correctamente */
-
+    position: relative;
 }
 #priceRangeSlider {
     margin-top: 20px;
+    margin-bottom: 20px;
 }
 
 #priceRangeSlider .noUi-handle {
-    width: 30px; /* Adjust handle width */
-    height: 30px; /* Adjust handle height */
-    border: none; /* Remove handle border */
-    background-color: black; /* Make handle transparent */
-    border-radius: 50%; /* Make the handle circular */
-    box-shadow: 0 0 20px rgba(255, 165, 0, 0.5); /* Add a glowing effect */
+    width: 30px;
+    height: 30px;
+    border: none;
+    background-color: black;
+    border-radius: 50%;
+    box-shadow: 0 0 20px rgba(255, 165, 0, 0.5);
 }
 
-/* Animation for the handle */
 @keyframes glowing {
-    0% {
-        box-shadow: 0 0 10px rgba(255, 165, 0, 0.5);
-    }
-    50% {
-        box-shadow: 0 0 20px rgba(255, 165, 0, 0.8);
-    }
-    100% {
-        box-shadow: 0 0 10px rgba(255, 165, 0, 0.5);
-    }
+    0% { box-shadow: 0 0 10px rgba(255, 165, 0, 0.5); }
+    50% { box-shadow: 0 0 20px rgba(255, 165, 0, 0.8); }
+    100% { box-shadow: 0 0 10px rgba(255, 165, 0, 0.5); }
 }
 
 #priceRangeSlider .noUi-handle:hover {
-    animation: glowing 1.5s infinite alternate; /* Add glowing effect on hover */
+    animation: glowing 1.5s infinite alternate;
 }
 
-/* Styles for the slider connect bar */
 #priceRangeSlider .noUi-connect {
     background: black;
-    
 }
-
 
 .input-box {
     display: flex;
@@ -302,300 +321,306 @@ $totalProductos = $query->count();
     align-items: center;
 }
 
-.min-box {
-    margin-right: 5px;
-}
-
-.max-box {
-    margin-left: 5px;
-}
-
-
+.min-box { margin-right: 5px; }
+.max-box { margin-left: 5px; }
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/14.6.4/nouislider.min.js"></script>
-    <link href = "css/jquery-ui.css" rel = "stylesheet">
-    
-
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.0.1/css/bootstrap.min.css" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/14.6.4/nouislider.min.css">
-
 </head>
  
-    
     <div class="section-header" style="display: flex; justify-content: center; align-items: center; background-color: black;">
         <h3 style="font-weight: bold; font-size: 40px; font-family: Century Gothic, sans-serif; color:#FFA500;">Pizzas</h3>
     </div>
-    
 
     <div class="card-body">
-       <h4 align="center" style="font-family: Consolas, sans-serif;"> Bienvenido  {{ auth()->user()->name }} {{ auth()->user()->email }} </h4>
+       <h4 align="center" style="font-family: Consolas, sans-serif;"> Bienvenido {{ auth()->user()->name }} {{ auth()->user()->email }} </h4>
     </div> 
 
     <div class="form-row justify-content-center" >
-    <label class="text-box"  >Precios:</label>
+        <label class="text-box">Precios:</label>
     </div>
 
     <div class="form-row justify-content-center" >
-    <div class="col-lg-2">
-        <label class="input-box" for="price_range">
-        
-            <div class="min-box" style="font-weight: bold; color: black;">
-            $<span name="min_price" id="price_range_label_min">{{ request('min_price') }}</span>
-            </div>
-            <div class="max-box" style="font-weight: bold; color: black;">
-                 $<span  name="max_price" id="price_range_label_max">{{ request('max_price') }}</span>
-            </div>
-            
-
-        </label>
+        <div class="col-lg-2">
+            <label class="input-box" for="price_range">
+                <div class="min-box" style="font-weight: bold; color: black;">
+                    $<span name="min_price" id="price_range_label_min">{{ request('min_price') ?? 0 }}</span>
+                </div>
+                <div class="max-box" style="font-weight: bold; color: black;">
+                     $<span name="max_price" id="price_range_label_max">{{ request('max_price') ?? 1000 }}</span>
+                </div>
+            </label>
+        </div>
     </div>
-    
-</div>
 
     <form action="{{ route('Pizzas.index') }}" method="GET">
-    <div id="priceRangeSlider"></div>
         <div class="form-row justify-content-center">
-        <div class="col-lg-2">
-            <div class="form-group">
-                <input type="hidden" name="min_price" id="minPrice" value="{{ request('min_price') }}" min="{{ request('min_price') }}" max="{{ request('max_price') }}" step="1" />
-                <input type="hidden" name="max_price" id="maxPrice" value="{{ request('max_price') }}" min="{{ request('min_price') }}" max="{{ request('max_price') }}" step="1" />
+            <div class="col-lg-3">
+                <div id="priceRangeSlider"></div>
             </div>
         </div>
-            
-        </div>
+
         <div class="form-row justify-content-center">
-        
             <div class="col-lg-2">
-                <select class="form-control custom-select no-print select2" style="font-family: Century Gothic, sans-serif;"  name="nombre_pizza" id="nombre_pizza">
+                <div class="form-group">
+                    <input type="hidden" name="min_price" id="minPrice" value="{{ request('min_price') ?? 0 }}" />
+                    <input type="hidden" name="max_price" id="maxPrice" value="{{ request('max_price') ?? 1000 }}" />
+                </div>
+            </div>
+        </div>
+
+        <div class="form-row justify-content-center">
+            <div class="col-lg-2">
+                <select class="form-control custom-select no-print select2" style="font-family: Century Gothic, sans-serif;" name="nombre_pizza" id="nombre_pizza">
                     <option value="">Pizzas</option>
                     <?php
-                $mysqli = new mysqli('localhost', 'root', '', 'pizzeria');
-                $query = $mysqli->query("SELECT * FROM pizzeria");
-
-                while ($pizza = mysqli_fetch_array($query)) {
-                    echo '<option value="'.$pizza['nombre_pizza'].'">'.$pizza['nombre_pizza'].'</option>';
-                }
-            ?>
+                        $mysqli = new mysqli('localhost', 'root', '', 'pizzeria');
+                        $queryMenu = $mysqli->query("SELECT DISTINCT nombre_pizza FROM pizzeria");
+                        while ($pizza = mysqli_fetch_array($queryMenu)) {
+                            $selected = (request('nombre_pizza') == $pizza['nombre_pizza']) ? 'selected' : '';
+                            echo '<option value="'.$pizza['nombre_pizza'].'" '.$selected.'>'.$pizza['nombre_pizza'].'</option>';
+                        }
+                    ?>
                 </select>
             </div>
         </div>
-        <div class="form-row justify-content-center">
+
+        <div class="form-row justify-content-center mt-2">
             <div class="col-lg-1.5">
                 <button type="submit" class="button-pizza btn-block">Buscar</button>
             </div>
         </div>
     </form>
-        <div class="form-row justify-content-center mb-4">
-            <div class="col-lg-1.5">
-                <a class="gradient-button btn-block" href="{{route ('Pizzas.create')}}" role="button" data-bs-toggle="button">
-                    <i class=" fa fa-plus-square"></i><span >Agregar Pizzas</span>
-                </a>
-            </div>
+
+    <div class="form-row justify-content-center mb-4 mt-2">
+        <div class="col-lg-1.5">
+            <a class="gradient-button btn-block" href="{{ route('Pizzas.create') }}" role="button">
+                <i class="fa fa-plus-square"></i><span> Agregar Pizzas</span>
+            </a>
         </div>
-        <div class="section-body" id="productos">
+    </div>
+
+    <div class="section-body" id="productos">
         <div class="row product-list">
         @if($pizzas->count() > 0)
             @foreach ($pizzas as $pizza)
                 <div class="col-lg-4 mb-4 product-box">
-                    <div class="card" >
-                    <img src="{{ asset('img/'.$pizza->imagen_pizza) }}" alt="Pizza Image" class="card-img-top" style="max-height: 200px; object-fit: cover;">
-                        <div class="card-body">
-                        <h6 class="mb-0 text-sm">{{ optional($pizza->vendedor)->name }}</h6>
-                            <h5 class="card-title">{{$pizza->nombre_pizza}}</h5>
-                            <p class="card-text" >Precio: ${{ number_format($pizza->precio_pizza, 0, '.', '.') }}</p>
-                            @if (Auth::user()->hasRole('Usuario') )
-                                <form action="{{ route('Pizzas.agregarCarrito', $pizza->id) }}" method="post">
-                                    @csrf
-                                    
-                                    <div class="form-group">
-                                        <label for="quantity">Cantidad:</label>
-                                        <input name="quantity" type="number"
-                                       class="text-sm sm:text-base px-2 pr-2 rounded-lg border border-gray-400 py-1 focus:outline-none focus:border-blue-400"
-                                       style="width: 50px" value="1" min="1" />
-                                    </div>
-                                    <p class="btn-holder">
-                                        <button type="submit"  class="btn btn-success" role="button">Agregar al carrito</button> 
-                                    </p>
-                                </form>
-                            @endif
-                            @can('Administrador-rol')
-                                <a href="{{ route('Pizzas.edit', $pizza->id) }}" class="btn btn-info">Editar</a>
-                            @endcan
-                            @if (Auth::user()->hasRole('Usuario') )
-                                @if(!$pizza->vendido)
-                                    <form method="POST" action="{{ route('Pizzas.comprar', $pizza->id) }}">
-                                        @csrf
-                                        @method('PUT')
-                                        <button type="submit" class="btn btn-success">Comprar</button>
-                                    </form>
-                                @else
-                                    <span class="btn bg-danger">Sold</span>
+                    <div class="card h-100 shadow-sm card-walmart">
+                        <div class="text-center pt-3 px-2 bg-light">
+                            <img src="{{ asset('img/'.$pizza->imagen_pizza) }}" alt="Pizza Image" class="card-img-top rounded" style="max-height: 200px; object-fit: cover;">
+                        </div>
+                        
+                        <div class="card-body d-flex flex-column p-3">
+                            <div class="d-block w-100 style="position: relative; overflow: visible;">
+    <h6 class="mb-0 text-sm text-muted" style="font-family: 'Century Gothic', sans-serif; font-weight: bold; color: #757575;">
+        {{ $pizza->marca ?? 'Genérico' }}
+    </h6>
+    <h5 class="product-title-walmart mt-1 mb-1" title="{{ $pizza->nombre_pizza }}">{{$pizza->nombre_pizza}}</h5>
+    
+    <p class="product-description-walmart text-secondary m-0" style="margin-bottom: 5px !important;" title="{{ $pizza->descripcion_pizza }}">
+        {{ $pizza->descripcion_pizza ?? 'Deliciosa pizza recién horneada con ingredientes de calidad.' }}
+    </p>
+
+    <p class="card-text text-primary font-weight-bold m-0" style="margin-top: 5px !important;">Precio: ${{ number_format($pizza->precio_pizza, 0, '.', '.') }}</p>
+</div>
+                            <div class="mt-auto">
+                                <!-- ACCIONES EXCLUSIVAS DEL CLIENTE (USUARIO) -->
+                                @if (Auth::user()->hasRole('Usuario'))
+                                    @if($pizza->stock <= 0 || $pizza->vendido == 1)
+                                        <div class="text-danger small font-weight-bold mb-2">
+                                            <i class="fas fa-times-circle"></i> No disponible - Agotado
+                                        </div>
+                                        <button class="btn btn-secondary w-100 disabled" style="border-radius: 20px; font-weight: bold;" disabled>Agotado</button>
+                                    @else 
+                                        <div class="text-success small font-weight-bold mb-2">
+                                            <i class="fas fa-check-circle"></i> Quedan: <span class="badge bg-success text-white">{{ $pizza->stock ?? 50 }} pzas</span>
+                                        </div>
+                                        
+                                        <form action="{{ route('Pizzas.agregarCarrito', $pizza->id) }}" method="POST" class="mb-2">
+                                            @csrf
+                                            <div class="d-flex gap-2 align-items-center mb-3 justify-content-between">
+                                                <small class="text-muted">Cantidad:</small>
+                                                <!-- CORRECCIÓN: name="quantity" mapeado exactamente como lo espera tu controlador -->
+                                                <input type="number" id="cantidad_{{ $pizza->id }}" name="quantity" value="1" min="1" max="{{ $pizza->stock ?? 50 }}" class="form-control form-control-sm text-center" style="width: 65px; border-radius: 8px;">
+                                            </div>
+                                            <button type="submit" class="btn btn-success text-white w-100 font-weight-bold" style="border-radius: 20px; background-color: #0e6b02; border: none; font-size: 14px;">
+                                                <i class="fas fa-shopping-cart"></i> Agregar al carrito
+                                            </button>
+                                        </form>
+                                    @endif
                                 @endif
-                            @endif
-                            @can('Administrador-rol')
-                                {!! Form::open(['method' => 'DELETE','route' => ['Pizzas.destroy', $pizza->id],'style'=>'display:inline']) !!}
-                                {!! Form::submit('Borrar', ['class' => 'btn btn-danger']) !!}
-                                {!! Form::close() !!}
-                            @endcan
+                                
+                                <!-- ACCIONES EXCLUSIVAS DEL ADMINISTRADOR -->
+                                @can('Administrador-rol')
+                                    <div class="d-flex justify-content-between align-items-center pt-2 border-top mt-2">
+                                        <a href="{{ route('Pizzas.edit', $pizza->id) }}" class="btn btn-sm btn-info text-white" style="border-radius: 10px;">Editar</a>
+                                        {!! Form::open(['method' => 'DELETE','route' => ['Pizzas.destroy', $pizza->id],'style'=>'display:inline', 'onsubmit' => "return confirm('¿Seguro que deseas eliminar esta pizza?');"]) !!}
+                                            {!! Form::submit('Borrar', ['class' => 'btn btn-danger btn-sm', 'style' => 'border-radius: 10px;']) !!}
+                                        {!! Form::close() !!}
+                                    </div>
+                                @endcan
+                            </div>
                         </div>
                     </div>
                 </div>
-
-                
             @endforeach
         @endif
-        
         </div>
+
         <div class="form-row justify-content-center">
-    @if( $pizzas->count() < $totalProductos)
-        <p class="text-center mt-4 mb-5">
-            <button class="index btn btn-dark" data-totalResult="{{ $totalProductos }}">Load More</button>
-        </p>
-    @endif
-</div>
+            @if($pizzas->count() < $totalProductos)
+                <p class="text-center mt-4 mb-5">
+                    <button class="index btn btn-dark" data-totalResult="{{ $totalProductos }}">Load More</button>
+                </p>
+            @endif
+        </div>
     </div>
     
     @yield('content')
-</div>
-
 </section>
 
-@endsection
-{{-- @endcan --}}
-<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/14.6.4/nouislider.min.css">
-
-<script type="text/javascript">
-    var main_site="{{ url('/') }}";
-</script>
 <script>
-        $(document).ready(function() {
-  $(".js-select2").select2({
-    closeOnSelect: false
-  });
-  $(".js-select2-multi").select2({
-    closeOnSelect: false
-  });
- 
+
+    var main_site = "{{ url('/') }}";
+
+$(document).ready(function() {
+    if ($.fn.select2) {
+        $(".js-select2").select2({ closeOnSelect: false });
+        $(".js-select2-multi").select2({ closeOnSelect: false });
+    }
 });
 
 document.addEventListener('DOMContentLoaded', function() {
-    var minPrice = {{ $min_price ?? 100 }};
-        var maxPrice = {{ $max_price ?? 300 }};
-        var initialMin = {{ request('min_price') ?? $min_price ?? 100 }};
-        var initialMax = {{ request('max_price') ?? $max_price ?? 300 }};
-        var minPriceInput = document.getElementById('minPrice');
-        var maxPriceInput = document.getElementById('maxPrice');
-        var priceRangeSlider = document.getElementById('priceRangeSlider');
+    var limiteMinimoAbsoluto = 0;
+    var limiteMaximoAbsoluto = 1000;
 
+    var initialMin = {{ request('min_price') ?? 0 }};
+    var initialMax = {{ request('max_price') ?? 1000 }};
+
+    var minPriceInput = document.getElementById('minPrice');
+    var maxPriceInput = document.getElementById('maxPrice');
+    var priceRangeSlider = document.getElementById('priceRangeSlider');
+
+    if (priceRangeSlider && typeof noUiSlider !== 'undefined') {
         noUiSlider.create(priceRangeSlider, {
             start: [initialMin, initialMax],
             connect: true,
             range: {
-                'min': minPrice,
-                'max': maxPrice
+                'min': limiteMinimoAbsoluto,
+                'max': limiteMaximoAbsoluto
             }
         });
 
         priceRangeSlider.noUiSlider.on('update', function(values, handle) {
-            var minPrice = Math.round(values[0]);
-            var maxPrice = Math.round(values[1]);
-            var value = Math.round(values[handle]);
-
-            $('#price_range_label_min').text(minPrice);
-            $('#price_range_label_max').text(maxPrice);
-            $('#minPrice').val(minPrice);
-            $('#maxPrice').val(maxPrice);
-
-            if (handle) {
-                maxPriceInput.value = value;
-            } else {
-                minPriceInput.value = value;
-            }
+                var value = Math.round(values[handle]);
+                if (handle) {
+                    $('#price_range_label_max').text(value);
+                    maxPriceInput.value = value;
+                } else {
+                    $('#price_range_label_min').text(value);
+                    minPriceInput.value = value;
+                }
         });
-    });
-$(document).ready(function(){
-        $(".index").on('click',function(){
-            var _totalCurrentResult = $(".product-box").length;
+    }
+});
 
-        // Ajax Request
+$(document).ready(function() {
+    $(document).on('submit', 'form[action*="destroy"]', function() {
+        return confirm('¿Estás completamente seguro de que deseas eliminar esta pizza del menú?');
+    });
+
+    $(".index").on('click', function() {
+        var _totalCurrentResult = $(".product-box").length;
+
         $.ajax({
             url: "{{ route('Pizzas.more_data') }}",
             type: 'GET',
             dataType: 'json',
             data: {
-                skip: _totalCurrentResult
+                skip: _totalCurrentResult,
+                nombre_pizza: $('#nombre_pizza').val(),
+                min_price: $('#minPrice').val(),
+                max_price: $('#maxPrice').val()
             },
-                beforeSend:function(){
-                    $(".index").html('Loading...');
-                },
-                success:function(response){
-                    var _html='';
-                    var image="{{ asset('img') }}/";
-                    var isUsuario = {{ Auth::user()->hasRole('Usuario') ? 'true' : 'false' }};
-                    var isAdministrador = {{ Auth::user()->hasRole('Administrador') ? 'true' : 'false' }};
-                    var addToCartRoute = "{{ route('Pizzas.agregarCarrito', ':pizza_id') }}";
-                    var buyRoute = "{{ route('Pizzas.comprar', ':pizza_id') }}";
-                    var editRoute = "{{ route('Pizzas.edit', ':pizza_id') }}";
-                    var deleteRoute = "{{ route('Pizzas.destroy', ':pizza_id') }}";
+            beforeSend: function() {
+                $(".index").html('Loading...');
+            },
+            success: function(response) {
+                var _html = '';
+                var image = "{{ asset('img') }}/";
+                var isUsuario = {{ Auth::user()->hasRole('Usuario') ? 'true' : 'false' }};
+                var isAdministrador = {{ Auth::user()->hasRole('Administrador') ? 'true' : 'false' }}; 
+                var addToCartRoute = "{{ route('Pizzas.agregarCarrito', ':pizza_id') }}";
+                var editRoute = "{{ route('Pizzas.edit', ':pizza_id') }}";
+                var deleteRoute = "{{ route('Pizzas.destroy', ':pizza_id') }}";
+                
+                $.each(response, function(index, value) {
+                    var precioFormateado = parseFloat(value.precio_pizza).toLocaleString('es-MX', { minimumFractionDigits: 0 });uct-box">';
+                    _html += '<div class="col-lg-4 mb-4 product-box">';
+                    _html += '<div class="card h-100 shadow-sm card-walmart">';
+                    _html += '<div class="text-center pt-3 px-2 bg-light"><img src="' + image + value.imagen_pizza + '" class="card-img-top rounded" style="max-height: 200px; object-fit: cover;">';
+                    _html += '<div class="card-body d-flex flex-column p-3">';
+                    _html += '<div class="d-block w-100" style="position: relative; overflow: visible;">';
+var marcaProducto = value.marca ? value.marca : 'Genérico';
+_html += '<h6 class="mb-0 text-sm text-muted" style="font-family: \'Century Gothic\', sans-serif; font-weight: bold; color: #757575;">' + marcaProducto + '</h6>';
+_html += '<h5 class="product-title-walmart mt-1 mb-1" title="' + value.nombre_pizza + '">' + value.nombre_pizza + '</h5>';
+
+var descProducto = value.descripcion_pizza ? value.descripcion_pizza : 'Deliciosa pizza recién horneada con ingredientes de calidad.';
+_html += '<p class="product-description-walmart text-secondary m-0" style="margin-bottom: 5px !important;" title="' + descProducto + '">' + descProducto + '</p>';
+
+_html += '<p class="card-text text-primary font-weight-bold m-0" style="margin-top: 5px !important;">Precio: $' + precioFormateado + '</p>';
+_html += '</div>';
+                    _html += '<div class="mt-auto">';
                     
-                    $.each(response, function(index, value) {
-                        _html += '<div class="col-lg-4 mb-4 product-box">';
-                        _html += '<div class="card">';
-                        _html += '<img src="' + image + value.imagen_pizza + '" class="card-img-top" alt="' + value.nombre_pizza + '" style="max-height: 200px; object-fit: cover;">';
-                        _html += '<div class="card-body">';
-                        _html += '<h6 class="mb-0 text-sm">' + (value.vendedor ? value.vendedor.name : '') + '</h6>';
-                        _html += '<h5 class="card-title">' + value.nombre_pizza + '</h5>';
-                        _html += '<p class="card-text">Precio: $' + value.precio_pizza + '</p>';
-                        
-                        if (isUsuario) {
-                            _html += '<form action="' + addToCartRoute.replace(':pizza_id', value.id) + '" method="post">';
-                            _html += '<input type="hidden" name="_token" value="{{ csrf_token() }}">';
-                            _html += '<div class="form-group">';
-                            _html += '<label for="quantity">Cantidad:</label>';
-                            _html += '<input name="quantity" type="number" class="text-sm sm:text-base px-2 pr-2 rounded-lg border border-gray-400 py-1 focus:outline-none focus:border-blue-400" style="width: 50px" value="1" min="1" />';
-                            _html += '</div>';
-                            _html += '<p class="btn-holder">';
-                            _html += '<button type="submit" class="btn btn-success" role="button">Agregar al carrito</button>';
-                            _html += '</p>';
-                            _html += '</form>';
-                            
-                        if (!value.vendido) {
-                            _html += '<form method="POST" action="' + buyRoute.replace(':pizza_id', value.id) + '">';
-                             _html += '<input type="hidden" name="_token" value="{{ csrf_token() }}">';
-                            _html += '<input type="hidden" name="_method" value="PUT">';
-                            _html += '<button type="submit" class="btn btn-success">Comprar</button>';
-                            _html += '</form>';
+                    if (isUsuario) {
+                        var stockReal = value.stock !== null ? value.stock : 50;
+
+                        if (stockReal <= 0 || value.vendido == 1) {
+                            _html += '<div class="text-danger small font-weight-bold mb-2"><i class="fas fa-times-circle"></i> No disponible - Agotado</div>';
+                            _html += '<button class="btn btn-secondary w-100 disabled" style="border-radius: 20px; font-weight: bold;" disabled>Agotado</button>';
                         } else {
-                            _html += '<span class="btn bg-danger">Sold</span>';
+                            _html += '<div class="text-success small font-weight-bold mb-2"><i class="fas fa-check-circle"></i> Quedan: <span class="badge bg-success text-white">' + stockReal + ' pzas</span></div>';
+                            
+                            // Formulario en JS corregido a POST nativo con variable quantity para el controlador
+                            _html += '<form action="' + addToCartRoute.replace(':pizza_id', value.id) + '" method="POST" class="mb-2">';
+                            _html += '<input type="hidden" name="_token" value="{{ csrf_token() }}">';
+                            _html += '<div class="d-flex gap-2 align-items-center mb-3 justify-content-between"><small class="text-muted">Cantidad:</small>';
+                            _html += '<input name="quantity" type="number" class="form-control form-control-sm text-center" style="width: 65px; border-radius: 8px;" value="1" min="1" max="' + stockReal + '" /></div>';
+                            _html += '<button type="submit" class="btn btn-success text-white w-100 font-weight-bold" style="border-radius: 20px; background-color: #0e6b02; border: none; font-size: 14px;"><i class="fas fa-shopping-cart"></i> Agregar al carrito</button>';
+                            _html += '</form>';
                         }
+
                     }
-        
+    
                     if (isAdministrador) {
-                        _html += '<a href="' + editRoute.replace(':pizza_id', value.id) + '" class="btn btn-info">Editar</a>';
-                         _html += '<form method="POST" action="' + deleteRoute.replace(':pizza_id', value.id) + '" style="display:inline">';
-                         _html += '<input type="hidden" name="_token" value="{{ csrf_token() }}">';
+                        _html += '<div class="d-flex justify-content-between align-items-center pt-2 border-top mt-2">';
+                        _html += '<a href="' + editRoute.replace(':pizza_id', value.id) + '" class="btn btn-info btn-sm">Editar</a>';
+                        _html += '<form method="POST" action="' + deleteRoute.replace(':pizza_id', value.id) + '" style="display:inline" onsubmit="return confirm(\'¿Seguro que deseas eliminar esta pizza del menú?\');">';
+                        _html += '<input type="hidden" name="_token" value="{{ csrf_token() }}">';
                         _html += '<input type="hidden" name="_method" value="DELETE">';
-                        _html += '<button type="submit" class="btn btn-danger">Borrar</button></form>';
+                        _html += '<button type="submit" class="btn btn-danger btn-sm">Borrar</button></form>';
                     }
 
-                    _html += '</div>'
-                    _html += '</div>'
+                    _html += '</div>';
+                    _html += '</div>';
                     _html += '</div>';
                 });
 
                 $(".product-list").append(_html);
-                    // Change Load More When No Further result
-                    var _totalCurrentResult=$(".product-box").length;
-                    var _totalResult=parseInt($(".index").attr('data-totalResult'));
-                    if(_totalCurrentResult==_totalResult){
+
+                var _totalCurrentResult = $(".product-box").length;
+                var _totalResult = parseInt($(".index").attr('data-totalResult'));
+                
+                if(_totalCurrentResult >= _totalResult){
                     $(".index").remove();
-                }else{
+                } else {
                     $(".index").html('Load More');
                 }
-                }
-            });
+            },
+            error: function() {
+                $(".index").html('Load More');
+                alert('Ocurrió un error al cargar más productos.');
+            }
         });
-        
     });
-  </script>
+});
+</script>
+@endsection

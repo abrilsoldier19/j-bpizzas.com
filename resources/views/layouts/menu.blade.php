@@ -84,6 +84,7 @@
             font-family: 'Century Gothic', sans-serif;
             color: black;
             background-color: #FFA500;
+            
         }
         .side-menus span{
             

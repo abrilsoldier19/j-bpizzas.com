@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Pizzeria;
 use App\Models\Usuario;
@@ -18,7 +19,6 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 class PizzasController extends Controller
 {
-
 
     public function create(Request $request)
     {
@@ -48,6 +48,11 @@ class PizzasController extends Controller
      
     $request->validate([
         'file' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+        'nombre_pizza' => 'required|string|max:255',
+        'marca' => 'required|string|max:255',
+        'precio_pizza' => 'required|numeric|min:0',
+        'stock' => 'required|integer|min:0',
+        'descripcion_pizza' => 'nullable|string|max:500',
     ]);
 
     $file = $request->file('file');
@@ -56,9 +61,12 @@ class PizzasController extends Controller
 
     Pizzeria::create([
         'nombre_pizza' => $request->nombre_pizza,
+        'marca' => $request->marca,
         'imagen_pizza' => $filePath ,
         'precio_pizza' => $request->precio_pizza,
+        'descripcion_pizza' => $request->descripcion_pizza,
         'vendido' => "0",
+        'stock' => $request->stock,
         'id_usuario' => Auth::user()->id,
     ]);
 
@@ -121,14 +129,30 @@ class PizzasController extends Controller
 }
 
 
-public function more_data(Request $request){
+public function more_data(Request $request) {
     if($request->ajax()){
-        $skip=$request->skip;
-        $take=6;
-        $pizzas=Pizzeria::skip($skip)->take($take)->get();
+        $skip = $request->skip;
+        $take = 6;
+        
+        // Creamos la consulta base
+        $query = Pizzeria::query();
+
+        // 1. Aplicamos filtro de nombre si existe
+        if ($request->filled('nombre_pizza')) {
+            $query->where('nombre_pizza', 'LIKE', '%' . $request->input('nombre_pizza') . '%');
+        }
+
+        // 2. Aplicamos filtro de slider de precios si existe
+        if ($request->filled('min_price') && $request->filled('max_price')) {
+            $query->whereBetween('precio_pizza', [$request->input('min_price'), $request->input('max_price')]);
+        }
+
+        // 3. Traemos los datos incluyendo la relación del vendedor para que no falle el JavaScript
+        $pizzas = $query->with('vendedor')->skip($skip)->take($take)->get();
+        
         return response()->json($pizzas);
-    }else{
-        return response()->json('Direct Access Not Allowed!!');
+    } else {
+        return response()->json('Direct Access Not Allowed!!', 403);
     }
 }
 
@@ -138,95 +162,62 @@ public function more_data(Request $request){
         return view('Pizzas.editar', compact('pizzas'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, $id)
-{
-    $request->validate([
-        'file' => 'sometimes|required|mimes:png,jpg|max:2048',
-        'nombre_pizza' => 'required',
-        'precio_pizza' => 'required', // Use 'sometimes' to make file optional
-    ]);
+    public function update(Request $request, $id) // <-- Usamos este $id
+    {
+        $request->validate([
+            'file' => 'sometimes|required|mimes:png,jpg,jpeg|max:2048',
+            'nombre_pizza' => 'required',
+            'precio_pizza' => 'required',
+            'stock' => 'required|integer|min:0',
+            'marca' => 'required|string|max:255',
+            'descripcion_pizza' => 'nullable|string|max:500',
+        ]);
 
-    // Find the existing Pizzeria record by ID
         $file = $request->file('file');
         $fileName = $file->getClientOriginalName();
         $filePath = $file->storeAs('',$fileName, 'public');
-
-        
     
-        $pizzas = Pizzeria::find($request->id);
+        $pizzas =Pizzeria::find($request->id);
         $pizzas->nombre_pizza = $request->input('nombre_pizza');
         $pizzas->precio_pizza = $request->input('precio_pizza');
+        $pizzas->stock = $request->input('stock');
         $pizzas->imagen_pizza = $filePath;
+        $pizzas->marca = $request->input('marca');
+        $pizzas->descripcion_pizza = $request->input('descripcion_pizza');
+
+        $pizzas->vendido = ($pizzas->stock <= 0) ? true : false; 
+
         $pizzas->save();
 
         if (!$pizzas){
             abort(404);
         }
     
-        return back()->with('success', 'Producto actualizado exitosamente.');
-
-}
-
-public function carrito(Request $request)
-{return view('Pizzas.carrito');
-}
-
-
-public function comprar($id, Request $request) {
-    
-
-    $producto = Pizzeria::find($id);
-
-    $quantity = $request->input('quantity', 0);
-
-    $carrito = new Carrito;
-    $carrito->nombre_producto = $producto->nombre_pizza; // Cambia esto según el tipo de producto
-    $carrito->precio_producto = $producto->precio_pizza; // Cambia esto según el tipo de producto
-    $carrito->cantidad_producto = $quantity;
-    $carrito->imagen_producto = $producto->imagen_pizza; // Cambia esto según el tipo de producto
-    $carrito->id_usuario = auth()->user()->id; // Cambia esto según cómo obtienes el ID del usuario actual
-    $carrito->save();
-
-    ProductoPizzas::create([
-        'id_producto' => $producto->id,
-        'id_comprador' => Auth::user()->id,
-        'cantidad_comprada' => $quantity,
-    ]);
-
-
-    $carritoSesion = session()->get('carrito', []);
-
-    if (isset($carritoSesion[$id])) {
-        $carritoSesion[$id]['quantity'] += $quantity;
-    } else {
-        $carritoSesion[$id] = [
-            "nombre_pizza" => $producto->nombre_pizza,
-            "imagen_pizza" => $producto->imagen_pizza,
-            "precio_pizza" => $producto->precio_pizza,
-            "quantity" => $quantity
-        ];
+        return redirect()->route('Pizzas.index')->with('success', 'Producto actualizado exitosamente.');
     }
 
-    session()->put('carrito', $carritoSesion);
+public function carrito(Request $request)
+{
+    return view('Pizzas.carrito');
+}
 
+public function misProductos()
+{
+    $userId = Auth::user()->id;
 
+    // Agregamos 'setPageName' para que cada pestaña navegue de forma independiente en la URL
+    $pizzas = Pizzeria::where('id_usuario', $userId)
+        ->orderBy('vendido', 'asc')
+        ->paginate(4, ['*'], 'pizzas_page');
 
-    return redirect()->back()->with('success', 'La pizza a sido comprado exitosament');
-} 
+    $bebidas = Bebida::where('id_usuario', $userId)
+        ->orderBy('vendido', 'asc')
+        ->paginate(4, ['*'], 'bebidas_page');
 
-public function misProductos(){
-    $pizzas = Pizzeria::where('id_usuario', Auth::user()->id)->orderBy('vendido', 'asc')->paginate(4);
-    $bebidas =Bebida::where('id_usuario', Auth::user()->id)->orderBy('vendido', 'asc')->paginate(4);
-    $postres =Postre::where('id_usuario', Auth::user()->id)->orderBy('vendido', 'asc')->paginate(4);
+    $postres = Postre::where('id_usuario', $userId)
+        ->orderBy('vendido', 'asc')
+        ->paginate(4, ['*'], 'postres_page');
 
-    
     return view('Pizzas.mi', compact('pizzas', 'bebidas', 'postres'));
 }
 
@@ -234,9 +225,13 @@ public function misProductos(){
 
 public function agregarCarrito($id,  Request $request)
 {
-    $producto = Pizzeria::find($id);
+    $producto = Pizzeria::findOrFail($id);
 
-    $quantity = $request->input('quantity', 0);
+    $quantity = $request->input('quantity', 1);
+
+    if ($producto->stock < $quantity) {
+        return redirect()->back()->with('error', 'Lo sentimos, solo quedan ' . $producto->stock . ' piezas disponibles.');
+    }
 
     $carrito = new Carrito;
     $carrito->nombre_producto = $producto->nombre_pizza; // Cambia esto según el tipo de producto
@@ -245,13 +240,6 @@ public function agregarCarrito($id,  Request $request)
     $carrito->imagen_producto = $producto->imagen_pizza; // Cambia esto según el tipo de producto
     $carrito->id_usuario = auth()->user()->id; // Cambia esto según cómo obtienes el ID del usuario actual
     $carrito->save();
-
-    ProductoPizzas::create([
-        'id_producto' => $producto->id,
-        'id_comprador' => Auth::user()->id,
-        'cantidad_comprada' => $quantity,
-    ]);
-
 
     $carritoSesion = session()->get('carrito', []);
 
@@ -267,6 +255,16 @@ public function agregarCarrito($id,  Request $request)
     }
 
     session()->put('carrito', $carritoSesion);
+
+    //manejo de stock
+    $producto->stock -= $quantity;
+
+    if ($producto->stock <= 0) {
+        $producto->stock = 0; // marca como disponible 0 si no hay stock
+        $producto->vendido = true; // Marcar como vendido si no hay stock
+    }
+
+    $producto->save();
 
 
     return redirect()->route('Pizzas.index')->with('success', 'Producto añadido al carrito exitosamente!');
@@ -275,38 +273,74 @@ public function agregarCarrito($id,  Request $request)
 
 public function updateCart(Request $request)
 {
-    if ($request->id && $request->quantity) {
-        // Update the session cart
-        $carrito = session()->get('carrito');
-        $carrito[$request->id]["quantity"] = $request->quantity;
-        session()->put('carrito', $carrito);
+    $request->validate([
+        'id' => 'required|integer',
+        'quantity' => 'required|integer|min:1',
+    ]);
 
-        // Update the database (assuming you have a Pizzeria model)
-        $pizza = Pizzeria::findOrFail($request->id);
-        $pizza->update(['quantity' => $request->quantity]);
+    $userId = Auth::user()->id;
+    $newQuantity = intval($request->quantity);
+    $pizza = Pizzeria::findOrFail($request->id);
 
-        // Update the Pedidos table (assuming you have a Pedido model)
-        // Assuming you have a relation between Pedido and Pizzeria models
-        $pedido = ProductoPizzas::where('id_producto', $request->id)->first();
-        if ($pedido) {
-            $pedido->update(['cantidad_comprada' => $request->quantity]);
-        }
+    $cartItem = Carrito::where('id_usuario', $userId)
+        ->where('nombre_producto', $pizza->nombre_pizza)
+        ->first();
 
-        session()->flash('success', 'Actualizado.');
+    if (!$cartItem) {
+        return redirect()->back()->with('error', 'Producto no encontrado en el carrito.');
     }
+
+    $difference = $newQuantity - intval($cartItem->cantidad_producto);
+
+    if ($difference > 0 && $pizza->stock < $difference) {
+        return redirect()->back()->with('error', "Lo sentimos, solo quedan {$pizza->stock} piezas de este producto.");
+    }
+
+    $cartItem->update(['cantidad_producto' => $newQuantity]);
+
+    session()->put("carrito.{$request->id}.quantity", $newQuantity);
+
+    $pizza->stock -= $difference;
+    $pizza->vendido = ($pizza->stock <= 0);
+    $pizza->save();
+
+        return redirect()->back()->with('success', 'Carrito actualizado con éxito.');
 }
 
-    public function remove(Request $request)
-    {
-        if($request->id) {
-            $carrito = session()->get('carrito');
-            if(isset($carrito[$request->id])) {
-                unset($carrito[$request->id]);
-                session()->put('carrito', $carrito);
-            }
-            session()->flash('success', 'Product successfully removed!');
+
+public function remove(Request $request)
+{
+    if ($request->id) {
+        $userId = auth()->user()->id;
+        
+        // se busca el postre en la base de datos usando el id enviado por la vista
+        $pizza = Pizzeria::findOrFail($request->id);
+
+        // se busca el producto en el carrito del usuario
+        $cartItem = Carrito::where('id_usuario', $userId)
+            ->where('nombre_producto', $pizza->nombre_pizza)
+            ->first();
+
+        // se regresa el stock del postre y se marca como disponible si es que estaba agotado
+        if ($cartItem) {
+            $pizza->stock += $cartItem->cantidad_producto; 
+            $pizza->vendido = false;                      
+            $pizza->save();
+
+            $cartItem->delete();
         }
+
+        // se actualiza la sesión del carrito para reflejar la eliminación del producto
+        $carrito = session()->get('carrito');
+        if (isset($carrito[$request->id])) {
+            unset($carrito[$request->id]);
+            session()->put('carrito', $carrito);
+        }
+
+        session()->flash('success', '¡Producto eliminado del carrito y devuelto al inventario!');
+        return redirect()->back();
     }
+}
  
     public function descargar($id)
     {

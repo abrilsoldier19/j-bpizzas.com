@@ -13,8 +13,10 @@ class Bebida extends Model
     public $timestamps = false;
     protected $fillable = [
         'nombre_bebida',
+        'marca',
         'bebida_precio',
         'bebida_imagen',
+        'stock',
         'vendido',
         'id_usuario',
     ];

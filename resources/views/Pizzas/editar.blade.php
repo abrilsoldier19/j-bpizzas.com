@@ -28,7 +28,18 @@
                     <label style="font-family: Century Gothic, sans-serif; font-size: 14px;">Precio Pizza</label>
                     <input type="text" class="form-control" name="precio_pizza" value="{{ $pizzas->precio_pizza}}"><br>
                 </div>
-                
+                <div class="custom-file container mt-5">
+                    <label style="font-family: Century Gothic, sans-serif; font-size: 14px;">Descripcion Pizza</label>
+                    <input type="text" class="form-control" name="descripcion_pizza" value="{{ $pizzas->descripcion_pizza}}"><br>
+                </div>
+                <div class="custom-file container mt-5">
+                    <label style="font-family: Century Gothic, sans-serif; font-size: 14px;">Stock</label>
+                    <input type="text" class="form-control" name="stock" value="{{ $pizzas->stock}}"><br>
+                </div>
+                <div class="custom-file container mt-5">
+                    <label style="font-family: Century Gothic, sans-serif; font-size: 14px;">Marca o proveedor</label>
+                    <input type="text" class="form-control" name="marca" value="{{ $pizzas->marca}}"><br>
+                </div>
                 <div class="custom-file container mt-5">
                     <input type="file" name="file" multiple class="custom-file-input form-control" id="file" accept="image/*">
                     <label class="custom-file-label" for="customFile">Choose file</label><br>

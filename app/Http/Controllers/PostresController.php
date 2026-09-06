@@ -44,6 +44,10 @@ class PostresController extends Controller
      
     $request->validate([
         'file' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+        'nombre_postre' => 'required|string|max:255',
+        'marca' => 'required|string|max:255',
+        'postre_precio' => 'required|numeric|min:0',
+        'stock' => 'required|integer|min:0',
     ]);
 
     $file = $request->file('file');
@@ -53,9 +57,11 @@ class PostresController extends Controller
     Postre::create([
         
         'nombre_postre' => $request->nombre_postre,
+        'marca' => $request->marca,
         'postre_imagen' => $filePath ,
         'postre_precio' => $request->postre_precio,
         'vendido' => "0",
+        'stock' => $request->stock,
         'id_usuario' => Auth::user()->id,
     ]);
 
@@ -108,14 +114,30 @@ class PostresController extends Controller
 
 
 
- public function more_data(Request $request){
+public function more_data(Request $request) {
     if($request->ajax()){
-        $skip=$request->skip;
-        $take=6;
-        $postres=Postre::skip($skip)->take($take)->get();
+        $skip = $request->skip;
+        $take = 6;
+        
+        // Creamos la consulta base
+        $query = Postre::query();
+
+        // 1. Aplicamos filtro de nombre si existe
+        if ($request->filled('nombre_postre')) {
+            $query->where('nombre_postre', 'LIKE', '%' . $request->input('nombre_postre') . '%');
+        }
+
+        // 2. Aplicamos filtro de slider de precios si existe
+        if ($request->filled('min_price') && $request->filled('max_price')) {
+            $query->whereBetween('postre_precio', [$request->input('min_price'), $request->input('max_price')]);
+        }
+
+        // 3. Traemos los datos incluyendo la relación del vendedor para que no falle el JavaScript
+        $postres = $query->with('vendedor')->skip($skip)->take($take)->get();
+        
         return response()->json($postres);
-    }else{
-        return response()->json('Direct Access Not Allowed!!');
+    } else {
+        return response()->json('Direct Access Not Allowed!!', 403);
     }
 }
 
@@ -127,32 +149,30 @@ class PostresController extends Controller
         return view('Postres.editar', compact('postres'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
     public function update(Request $request, $id)
 {
     $request->validate([
         'file' => 'sometimes|required|mimes:png,jpg|max:2048',
         'nombre_postre' => 'required',
         'postre_precio' => 'required', // Use 'sometimes' to make file optional
+        'stock' => 'required|integer|min:0',
+        'marca' => 'required|string|max:255'
     ]);
 
     // Find the existing Pizzeria record by ID
         $file = $request->file('file');
         $fileName = $file->getClientOriginalName();
         $filePath = $file->storeAs('',$fileName, 'public');
-
-        
     
         $postres =Postre::find($request->id);
         $postres->nombre_postre = $request->input('nombre_postre');
         $postres->postre_precio = $request->input('postre_precio');
+        $postres->stock = $request->input('stock');
         $postres->postre_imagen = $filePath;
+        $postres->marca = $request->input('marca');
+
+        $postres->vendido = ($postres->stock <= 0) ? true : false; 
+
         $postres->save();
 
         if (!$postres){
@@ -168,43 +188,6 @@ public function carrito(Request $request)
     return view('Postres.carrito');
 }
 
-public function comprar($id, Request $request){
-    $postre = Postre::find($id);
-
-    $quantity = $request->input('quantity', 0);
-
-    // Create a new Pedido record for each item added to the cart
-    ProductoPostre::create([
-        'id_postre' => $postre->id,
-        'id_comprador' => Auth::user()->id,
-        'cantidad_comprada' => $quantity,
-    ]);
-
-    $carrito = session()->get('carrito', []);
-
-    if (isset($carrito[$id])) {
-        $carrito[$id]['quantity'] += $quantity;
-    } else {
-        $carrito[$id] = [
-            "nombre_postre" => $postre->nombre_postre,
-            "postre_imagen" => $postre->postre_imagen,
-            "postre_precio" => $postre->postre_precio,
-            "quantity" => $quantity
-        ];
-    }
-
-    session()->put('carrito', $carrito);
-
-    $postre->update([
-        'vendido' => true,
-    ]);
-
-
-
-    return redirect()->route('Postres.index')->with('success', 'Congratulations, the postre has been purchased successfully');
-}
-
-
 public function mi(){
     $postres =Postre::where('id_usuario', Auth::user()->id)->orderBy('vendido', 'asc')->get();
     
@@ -215,10 +198,18 @@ public function mi(){
 
 public function agregarCarrito($id, Request $request)
 {
-     $postre = Postre::find($id);
+    //Se busca si hay postres o no con el id
+    $postre = Postre::findOrFail($id);
 
-    $quantity = $request->input('quantity', 0);
+    //Para saber si hay suficiente stock antes de agregar al carrito
+    $quantity = $request->input('quantity', 1);
 
+    // validacion de stock
+    if ($postre->stock < $quantity) {
+        return redirect()->back()->with('error', 'Lo sentimos, solo quedan ' . $postre->stock . ' piezas disponibles.');
+    }
+
+    // se guarda los postres en el carrito de compras y en la base de datos
     $carrito = new Carrito;
     $carrito->nombre_producto = $postre->nombre_postre; // Cambia esto según el tipo de producto
     $carrito->precio_producto = $postre->postre_precio; // Cambia esto según el tipo de producto
@@ -227,14 +218,7 @@ public function agregarCarrito($id, Request $request)
     $carrito->id_usuario = auth()->user()->id; // Cambia esto según cómo obtienes el ID del usuario actual
     $carrito->save();
 
-
-    // Create a new Pedido record for each item added to the cart
-    ProductoPostre::create([
-        'id_postre' => $postre->id,
-        'id_comprador' => Auth::user()->id,
-        'cantidad_comprada' => $quantity,
-    ]);
-
+    //guardar en la sesion del carrito
     $carritoSesion = session()->get('carrito', []);
 
     if (isset($carritoSesion[$id])) {
@@ -249,48 +233,92 @@ public function agregarCarrito($id, Request $request)
     }
 
     session()->put('carrito', $carritoSesion);
-    
 
+    //manejo de stock
+    $postre->stock -= $quantity;
 
-    return redirect()->route('Postres.index')->with('success', 'Congratulations, the postre has been purchased successfully');
+    if ($postre->stock <= 0) {
+        $postre->stock = 0; // marca como disponible 0 si no hay stock
+        $postre->vendido = true; // Marcar como vendido si no hay stock
+    }
+
+    $postre->save();
+
+    return redirect()->route('Postres.index')->with('success', 'El postre se ha agregado al carrito exitosamente');
 }
  
 
 public function updateCart(Request $request)
 {
-    if ($request->id && $request->quantity) {
-        // Update the session cart
-        $carrito = session()->get('carrito');
-        $carrito[$request->id]["quantity"] = $request->quantity;
-        session()->put('carrito', $carrito);
+    $request->validate([
+        'id' => 'required|exists:postres,id',
+        'quantity' => 'required|integer|min:1'
+    ]);
 
-        // Update the database (assuming you have a Pizzeria model)
-        $postre =Postre::findOrFail($request->id);
-        $postre->update(['quantity' => $request->quantity]);
+    $userId = auth()->id();
+    $newQuantity = intval($request->quantity);
+    $postre = Postre::findOrFail($request->id);
 
-        // Update the Pedidos table (assuming you have a Pedido model)
-        // Assuming you have a relation between Pedido and Pizzeria models
-        $pedido = ProductoPostre::where('id_postre', $request->id)->first();
-        if ($pedido) {
-            $pedido->update(['cantidad_comprada' => $request->quantity]);
-        }
+    $cartItem = Carrito::where('id_usuario', $userId)
+        ->where('nombre_producto', $postre->nombre_postre)
+        ->first();
 
-        session()->flash('success', 'Actualizado.');
+    if (!$cartItem) {
+        return redirect()->back()->with('error', 'Producto no encontrado en tu carrito.');
     }
+
+    $difference = $newQuantity - intval($cartItem->cantidad_producto);
+
+    if ($difference > 0 && $postre->stock < $difference) {
+        return redirect()->back()->with('error', "Lo sentimos, solo quedan {$postre->stock} piezas de este producto.");
+    }
+
+    $cartItem->update(['cantidad_producto' => $newQuantity]);
+
+    session()->put("carrito.{$request->id}.quantity", $newQuantity);
+
+    $postre->stock -= $difference;
+    $postre->vendido = ($postre->stock <= 0);
+    $postre->save();
+
+    return redirect()->back()->with('success', 'Carrito actualizado con éxito.');
 }
 
-    public function remove(Request $request)
-    {
-        if($request->id) {
-            $carrito = session()->get('carrito');
-            if(isset($carrito[$request->id])) {
-                unset($carrito[$request->id]);
-                session()->put('carrito', $carrito);
-            }
-            session()->flash('success', 'Product successfully removed!');
+
+
+   public function remove(Request $request)
+{
+    if ($request->id) {
+        $userId = auth()->user()->id;
+        
+        // se busca el postre en la base de datos usando el id enviado por la vista
+        $postre = Postre::findOrFail($request->id);
+
+        // se busca el producto en el carrito del usuario
+        $cartItem = Carrito::where('id_usuario', $userId)
+            ->where('nombre_producto', $postre->nombre_postre)
+            ->first();
+
+        // se regresa el stock del postre y se marca como disponible si es que estaba agotado
+        if ($cartItem) {
+            $postre->stock += $cartItem->cantidad_producto; 
+            $postre->vendido = false;                      
+            $postre->save();
+
+            $cartItem->delete();
         }
+
+        // se actualiza la sesión del carrito para reflejar la eliminación del producto
+        $carrito = session()->get('carrito');
+        if (isset($carrito[$request->id])) {
+            unset($carrito[$request->id]);
+            session()->put('carrito', $carrito);
+        }
+
+        session()->flash('success', '¡Producto eliminado del carrito y devuelto al inventario!');
+        return redirect()->back();
     }
- 
+}
     public function descargar($id)
     {
         $postres =Postre::findOrFail($id);

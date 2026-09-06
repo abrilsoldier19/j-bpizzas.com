@@ -185,7 +185,7 @@ Route::group(['middleware' => ['auth']], function() {
    Route::get('/Postre-carrito', [PostresController::class, 'carrito'])->name('Postre.carrito');
    Route::post('/Postres/agregar-Carrito/{id}', [PostresController::class, 'agregarCarrito'])->name('Postres.agregarCarrito');  
   Route::delete('delete-from-cart', [PostresController::class, 'remove'])->name('delete.cart.product');
-  Route::put('/comprar/{id}', [PostresController::class, 'comprar'])->name('Postres.comprar');
+  Route::post('/comprar/{id}', [PostresController::class, 'comprar'])->name('Postres.comprar');
   Route::get('/mi', [PostresController::class, 'mi'])->name('Postres.mi');
   Route::put('/Postres/{id}/activate', [PostresController::class, 'activate'])->name('Postres.activate');
   Route::delete('delete-from-cart', [PostresController::class, 'remove'])->name('delete.cart.product');

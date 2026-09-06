@@ -41,10 +41,14 @@ class BebidasController extends Controller
 
 
     public function store(Request $request)
-{
+    {
      
     $request->validate([
         'file' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+        'nombre_bebida' => 'required|string|max:255',
+        'marca'=> 'required|string|max:255',
+        'bebida_precio' => 'required|numeric|min:0',
+        'stock' => 'required|integer|min:0',
     ]);
 
     $file = $request->file('file');
@@ -53,8 +57,10 @@ class BebidasController extends Controller
 
     Bebida::create([
         'nombre_bebida' => $request->nombre_bebida,
+        'marca' => $request->marca,
         'bebida_imagen' => $filePath ,
         'bebida_precio' => $request->bebida_precio,
+        'stock' => $request->stock,
         'vendido' => "0",
         'id_usuario' => Auth::user()->id,
     ]);
@@ -124,20 +130,15 @@ class BebidasController extends Controller
         $bebidas = Bebida::find($id);
         return view('Bebidas.editar', compact('bebidas'));
     }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
+    
     public function update(Request $request, $id)
 {
     $request->validate([
         'file' => 'sometimes|required|mimes:png,jpg|max:2048',
         'nombre_bebida' => 'required',
-        'bebida_precio' => 'required', // Use 'sometimes' to make file optional
+        'bebida_precio' => 'required',
+        'stock' => 'required|integer|min:0',
+        'marca' => 'required|string|max:255',
     ]);
 
     // Find the existing Pizzeria record by ID
@@ -151,6 +152,11 @@ class BebidasController extends Controller
         $bebidas->nombre_bebida = $request->input('nombre_bebida');
         $bebidas->bebida_precio = $request->input('bebida_precio');
         $bebidas->bebida_imagen = $filePath;
+        $bebidas->stock = $request->input('stock');
+        $bebidas->marca = $request->input('marca');
+
+        $bebidas->vendido = ($bebidas->stock <=0) ? true : false; 
+
         $bebidas->save();
 
         if (!$bebidas){
@@ -166,51 +172,15 @@ public function carrito(Request $request)
     return view('Bebidas.carrito');
 }
 
-public function comprar($id, Request $request)
-{
-    $bebida = Bebida::find($id);
-
-    $quantity = $request->input('quantity', 0);
-
-    // Create a new Pedido record for each item added to the cart
-    ProductoBebida::create([
-        'id_bebida' => $bebida->id,
-        'id_comprador' => Auth::user()->id,
-        'cantidad_comprada' => $quantity,
-    ]);
-
-    $carrito = session()->get('carrito', []);
-
-    if (isset($carrito[$id])) {
-        $carrito[$id]['quantity'] += $quantity;
-    } else {
-        $carrito[$id] = [
-            "nombre_bebida" => $bebida->nombre_bebida,
-            "bebida_imagen" => $bebida->bebida_imagen,
-            "bebida_precio" => $bebida->bebida_precio,
-            "quantity" => $quantity
-        ];
-    }
-
-    session()->put('carrito', $carrito);
-
-    $bebida->update([
-        'vendido' => true,
-    ]);
-
-
-
-    return redirect()->route('Bebidas.index')->with('success', 'La bebida a sido comprado exitosamente');
-}
-
-
-
-
 public function agregarCarrito($id, Request $request)
 {
-    $bebida = Bebida::find($id);
+    $bebida = Bebida::findOrFail($id);
 
-    $quantity = $request->input('quantity', 0);
+    $quantity = $request->input('quantity', 1);
+
+    if ($bebida->stock < $quantity) {
+        return redirect()->back()->with('error', 'Lo sentimos, solo quedan ' . $bebida->stock . ' disponibles.');
+    }
 
     $carrito = new Carrito;
     $carrito->nombre_producto = $bebida->nombre_bebida; // Cambia esto según el tipo de producto
@@ -219,13 +189,6 @@ public function agregarCarrito($id, Request $request)
     $carrito->imagen_producto = $bebida->bebida_imagen; // Cambia esto según el tipo de producto
     $carrito->id_usuario = auth()->user()->id; // Cambia esto según cómo obtienes el ID del usuario actual
     $carrito->save();
-
-    // Create a new Pedido record for each item added to the cart
-    ProductoBebida::create([
-        'id_bebida' => $bebida->id,
-        'id_comprador' => Auth::user()->id,
-        'cantidad_comprada' => $quantity,
-    ]);
 
     $carritoSesion = session()->get('carrito', []);
 
@@ -242,6 +205,13 @@ public function agregarCarrito($id, Request $request)
 
     session()->put('carrito', $carritoSesion);
 
+    $bebida->stock -= $quantity;
+    if ($bebida->stock <= 0) {
+        $bebida->stock = 0;
+        $bebida->vendido = true;
+    }
+
+    $bebida->save();
 
     return redirect()->route('Bebidas.index')->with('success', 'La bebida a sido agregado exitosamente');
 }
@@ -249,38 +219,90 @@ public function agregarCarrito($id, Request $request)
 
 public function updateCart(Request $request)
 {
+    $request->validate([
+        'id' => 'required|exists:bebidas,id',
+        'quantity' => 'required|integer|min:1',
+    ]);
+
+    $userId = auth()->id();
+    $newQuantity = intval($request->quantity);
+
     if ($request->id && $request->quantity) {
-        // Update the session cart
-        $carrito = session()->get('carrito');
-        $carrito[$request->id]["quantity"] = $request->quantity;
-        session()->put('carrito', $carrito);
+        $userId = auth()->user()->id;
+        $newQuantity = intval($request->quantity);
 
-        // Update the database (assuming you have a Pizzeria model)
-        $pedido =Bebida::findOrFail($request->id);
-        $pedido->update(['quantity' => $request->quantity]);
+        $bebida = Bebida::findOrFail($request->id);
 
-        // Update the Pedidos table (assuming you have a Pedido model)
-        // Assuming you have a relation between Pedido and Pizzeria models
-        $pedido = ProductoBebida::where('id_bebida', $request->id)->first();
-        if ($pedido) {
-            $pedido->update(['cantidad_comprada' => $request->quantity]);
+        $cartItem = Carrito::where('id_usuario', $userId)
+            ->where('nombre_producto', $bebida->nombre_bebida)
+            ->first();
+
+        if ($cartItem) {
+            session()->flash('error', "Producto no encontrado en el carrito.");
+            return redirect()->back();
         }
 
-        session()->flash('success', 'Actualizado.');
+        $oldQuantity = intval($cartItem->cantidad_producto);
+        $difference = $newQuantity - $oldQuantity;
+
+        if ($difference > 0 && $bebida->stock < $difference) {
+            session()->flash('error', 'Lo sentimos, solo quedan ' . $bebida->stock . ' disponibles.');
+            return redirect()->back();
+        }
+
+        $cartItem->cantidad_producto = $newQuantity;
+        $cartItem->save();
+
+        // Update the session cart
+        $carrito = session()->get('carrito');
+        if (isset($carrito[$request->id])) {
+            $carrito[$request->id]["quantity"] = $request->quantity;
+            session()->put('carrito', $carrito);
+        }
+
+        $bebida->stock -= $difference;
+        if ($bebida->stock <= 0) {
+            $bebida->stock = 0;
+            $bebida->vendido = true;
+        } else {
+            $bebida->vendido = false;
+        }
+        $bebida->save();
+        
+        session()->flash('success', 'Carrito actualizado.');
+        return redirect()->back();
     }
 }
 
     public function remove(Request $request)
-    {
-        if($request->id) {
-            $carrito = session()->get('carrito');
-            if(isset($carrito[$request->id])) {
-                unset($carrito[$request->id]);
-                session()->put('carrito', $carrito);
-            }
-            session()->flash('success', 'Product successfully removed!');
+{
+    if ($request->id) {
+        $userId = auth()->user()->id;
+        
+        $bebida = Bebida::findOrFail($request->id);
+
+        $cartItem = Carrito::where('id_usuario', $userId)
+            ->where('nombre_producto', $bebida->nombre_bebida)
+            ->first();
+
+        if ($cartItem) {
+            $bebida->stock += $cartItem->cantidad_producto; 
+            $bebida->vendido = false;                      
+            $bebida->save();
+
+            $cartItem->delete();
         }
+
+        $carrito = session()->get('carrito');
+        if (isset($carrito[$request->id])) {
+            unset($carrito[$request->id]);
+            session()->put('carrito', $carrito);
+        }
+
+        session()->flash('success', '¡Producto eliminado del carrito y devuelto al inventario!');
+        return redirect()->back();
     }
+}
  
     public function descargar($id)
     {

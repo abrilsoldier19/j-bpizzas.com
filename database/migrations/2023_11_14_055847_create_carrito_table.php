@@ -18,10 +18,9 @@ class CreateCarritoTable extends Migration
             $table->string('nombre_producto');
             $table->double('precio_producto');
             $table->string('imagen_producto')->nullable();
-            $table->bigInteger('id_usuario');
+            //$table->bigInteger('id_usuario');
             $table->integer('cantidad_producto')->default(false);
-            $table->foreign('id_usuario')->references('id')->on('usuarios')->onDelete('cascade');
-            
+            $table->foreignId('id_usuario')->constrained('usuarios')->onDelete('cascade');
         });
     }
 

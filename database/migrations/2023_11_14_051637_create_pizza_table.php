@@ -16,10 +16,15 @@ class CreatePizzaTable extends Migration
         Schema::create('pizzeria', function (Blueprint $table) {
             $table->id('id');
             $table->string('nombre_pizza');
+            $table->string('marca')->default('Genérico'); // Para poner 'Coca-Cola', 'Pepsi', etc.
             $table->double('precio_pizza');
             $table->string('imagen_pizza')->nullable();
-            $table->boolean('vendido')->default(false);
-            $table->bigInteger('id_usuario');
+            $table->text('descripcion_pizza')->nullable(); 
+            $table->integer('stock')->default(20); // Inventario inicial de refrescos
+            $table->boolean('vendido')->default(false); // Interruptor de agotado (0 disponible, 1 agotado)
+        
+            $table->foreignId('id_usuario')->constrained('usuarios')->onDelete('cascade');
+            $table->timestamps();
         });
     }
 

@@ -25,8 +25,16 @@
                     <input type="text" class="form-control" name="nombre_postre" value="{{ $postres->nombre_postre}}">
                 </div>
                 <div class="custom-file container mt-5">
-                    <label style="font-family: Century Gothic, sans-serif; font-size: 14px;">Precio Pizza</label>
+                    <label style="font-family: Century Gothic, sans-serif; font-size: 14px;">Precio Postre</label>
                     <input type="text" class="form-control" name="postre_precio" value="{{ $postres->postre_precio}}"><br>
+                </div>
+                <div class="custom-file container mt-5">
+                    <label style="font-family: Century Gothic, sans-serif; font-size: 14px;">Stock</label>
+                    <input type="text" class="form-control" name="stock" value="{{ $postres->stock}}"><br>
+                </div>
+                <div class="custom-file container mt-5">
+                    <label style="font-family: Century Gothic, sans-serif; font-size: 14px;">Marca o proveedor</label>
+                    <input type="text" class="form-control" name="marca" value="{{ $postres->marca}}"><br>
                 </div>
                 
                 <div class="custom-file container mt-5">
