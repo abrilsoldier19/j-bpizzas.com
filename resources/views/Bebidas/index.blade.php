@@ -550,8 +550,8 @@
             success: function(response){
                 var _html = '';
                 var image = "{{ asset('img') }}/";
-                var isUsuario = {{ Auth::user()->hasRole('Usuario') ? 'true' : 'false' }};
-                var isAdministrador = {{ Auth::user()->hasRole('Administrador') ? 'true' : 'false' }};
+                var isUsuario = @json(Auth::user()->hasRole('Usuario'));
+                var isAdministrador = @can('Administrador-rol') true @else false @endcan;
                 
                 // Ruta unificada a agregarCarrito en POST directo
                 var addToCartRoute = "{{ route('Bebidas.agregarCarrito', ':bebida_id') }}";
