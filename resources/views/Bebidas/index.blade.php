@@ -25,6 +25,32 @@
             transform: translateY(-4px);
             box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
         }
+        .product-image-container {
+    background-color: #f8f9fa; /* Fondo gris claro neutral para resaltar el blanco */
+    border-radius: 16px;       /* Bordes redondeados de la tarjeta de foto */
+    height: 200px;             /* Altura fija uniforme para todas las latas/botellas */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    overflow: hidden;
+}
+
+/* Ajuste de la botella/lata */
+.product-image {
+    max-height: 100%;
+    max-width: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;       /* Evita recortes o deformaciones en botellas delgadas */
+    filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.12)); /* Sombra suave para dar efecto 3D */
+    transition: transform 0.3s ease;
+}
+
+/* Efecto Hover para destacar el producto */
+.card-walmart:hover .product-image {
+    transform: scale(1.06);   /* Ligero zoom al pasar el cursor */
+}
         .product-title-walmart {
             font-family: 'Century Gothic', sans-serif;
             font-weight: bold;
@@ -69,7 +95,6 @@
     transition: 0.5s;
     background-size: 200% auto;
     color: #FFF;
-    box-shadow: 0 0 20px #eee;
     box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
     transition: all 0.3s cubic-bezier(.25,.8,.25,1);
     cursor: pointer;
@@ -406,9 +431,8 @@
             @foreach ($bebidas as $bebida)
                 <div class="col-lg-4 mb-4 product-box">
                     <div class="card h-100 shadow-sm card-walmart">
-                        <!-- Contenedor superior para la foto con fondo gris suave de Walmart -->
-                        <div class="text-center pt-3 px-2 bg-light">
-                            <img src="{{ asset('img/'.$bebida->bebida_imagen) }}" alt="Bebida Image" class="card-img-top rounded" style="height: 160px; object-fit: cover;">
+                        <div class="product-image-container">
+                            <img src="{{ asset('img/'.$bebida->bebida_imagen) }}" alt="{{ $bebida->nombre_bebida }}" class="product-image">
                         </div>
                         
                         <div class="card-body d-flex flex-column p-3">
@@ -564,7 +588,9 @@
                     _html += '<div class="col-lg-4 mb-4 product-box">';
                     // CORRECCIÓN: Inyectamos la clase card-walmart exacta para que las tarjetas de abajo salgan blancas
                     _html += '<div class="card h-100 shadow-sm card-walmart">';
-                    _html += '<div class="text-center pt-3 px-2 bg-light"><img src="' + image + value.bebida_imagen + '" class="card-img-top rounded" style="height: 160px; object-fit: cover;"></div>';
+                    _html += '<div class="product-image-container">';
+                    _html += '<img src="' + image + value.bebida_imagen + '" class="product-image" alt="' + value.nombre_bebida + '">';
+                    _html += '</div>';
                     _html += '<div class="card-body d-flex flex-column p-3">';
                     var marcaProducto = value.marca ? value.marca : 'Genérico';
                     _html += '<h6 class="mb-0 text-sm text-muted" style="font-family: \'Century Gothic\', sans-serif; font-weight: bold; color: #757575;">' + marcaProducto + '</h6>';
