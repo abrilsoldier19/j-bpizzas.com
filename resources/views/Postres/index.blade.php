@@ -366,8 +366,8 @@
                 <div class="col-lg-4 mb-4 product-box">
                     <div class="card h-100 shadow-sm card-walmart">
                         <!-- Contenedor superior para la foto con fondo gris suave de Walmart -->
-                        <div class="text-center pt-3 px-2 bg-light">
-                            <img src="{{ asset('img/'.$postre->postre_imagen) }}" alt="Postre Image" class="card-img-top rounded" style="height: 160px; object-fit: cover;">
+                        <div class="text-center pt-3 px-2 bg-white">
+                            <img src="{{ asset('img/'.$postre->postre_imagen) }}" alt="Postre Image" class="card-img-top rounded" style="height: 160px; object-fit: contain;">
                         </div>
                         
                         <div class="card-body d-flex flex-column p-3">
@@ -515,7 +515,7 @@
                     _html += '<div class="col-lg-4 mb-4 product-box">';
                     // CORRECCIÓN: Inyectamos la clase card-walmart exacta para que las tarjetas de abajo salgan blancas
                     _html += '<div class="card h-100 shadow-sm card-walmart">';
-                    _html += '<div class="text-center pt-3 px-2 bg-light"><img src="' + image + value.postre_imagen + '" class="card-img-top rounded" style="height: 160px; object-fit: cover;"></div>';
+                    _html += '<div class="text-center pt-3 px-2 bg-white"><img src="' + image + value.postre_imagen + '" class="card-img-top rounded" style="height: 160px; object-fit: contain;"></div>';
                     _html += '<div class="card-body d-flex flex-column p-3">';
                     var marcaProducto = value.marca ? value.marca : 'Genérico';
                     _html += '<h6 class="mb-0 text-sm text-muted" style="font-family: \'Century Gothic\', sans-serif; font-weight: bold; color: #757575;">' + marcaProducto + '</h6>';
