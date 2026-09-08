@@ -25,26 +25,30 @@
             transform: translateY(-4px);
             box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
         }
-        .product-image-container {
-    background-color: #f8f9fa; /* Fondo gris claro neutral para resaltar el blanco */
-    border-radius: 16px;       /* Bordes redondeados de la tarjeta de foto */
-    height: 200px;             /* Altura fija uniforme para todas las latas/botellas */
+        /* 1. Contenedor de la foto limpio y uniforme */
+.product-image-container {
+    background-color: #f8f9fa !important; /* Fondo gris claro suave */
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    height: 180px;      
+    border-radius: 15px !important;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 12px;
+    padding: 15px;
     overflow: hidden;
 }
 
-/* Ajuste de la botella/lata */
+/* 2. Ajuste de la lata sin bordes ni sombras adicionales */
 .product-image {
     max-height: 100%;
     max-width: 100%;
     width: auto;
     height: auto;
-    object-fit: contain;       /* Evita recortes o deformaciones en botellas delgadas */
-    filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.12)); /* Sombra suave para dar efecto 3D */
-    transition: transform 0.3s ease;
+    object-fit: contain;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
 }
 
 /* Efecto Hover para destacar el producto */
@@ -390,14 +394,6 @@
             <div class="col-lg-2">
                 <select class="form-control custom-select no-print select2" style="font-family: Century Gothic, sans-serif;"  name="nombre_bebida" id="nombre_bebida">
                     <option value="">Bebidas</option>
-                    <?php
-                $mysqli = new mysqli('localhost', 'root', '', 'pizzeria');
-                $query = $mysqli->query("SELECT * FROM bebidas");
-
-                while ($bebida = mysqli_fetch_array($query)) {
-                    echo '<option value="'.$bebida['nombre_bebida'].'">'.$bebida['nombre_bebida'].'</option>';
-                }
-            ?>
                 <?php
                     $mysqli = new mysqli('localhost', 'root', '', 'pizzeria');
                     $querySelect = $mysqli->query("SELECT DISTINCT nombre_bebida FROM bebidas");
